@@ -14,6 +14,7 @@ class Movie(models.Model):
     tmdb_id = models.IntegerField(unique=True)
     title = models.CharField(max_length=255)
     genres = models.ManyToManyField(Genre, blank=True)
+    release_date = models.DateField(null=True, blank=True)
     overview = models.TextField(blank=True)
     runtime = models.IntegerField(null=True, blank=True)
     vote_average = models.FloatField(default=0)
@@ -21,9 +22,6 @@ class Movie(models.Model):
     popularity = models.FloatField(default=0)
     poster_path = models.CharField(max_length=255, blank=True, null=True)
     backdrop_path = models.CharField(max_length=255, blank=True, null=True)
-    original_language = models.CharField(max_length=10, blank=True)
-    tagline = models.CharField(max_length=255, blank=True)
-    status = models.CharField(max_length=50, blank=True)
 
     def __str__(self):
         return self.title
@@ -39,8 +37,12 @@ class Person(models.Model):
 
 
 class MovieCast(models.Model):
-    movie = models.ForeignKey(Movie, on_delete=models.CASCADE)
-    person = models.ForeignKey(Person, on_delete=models.CASCADE)
+    movie = models.ForeignKey(
+        Movie, on_delete=models.CASCADE, related_name="cast"
+    )
+    person = models.ForeignKey(
+        Person, on_delete=models.CASCADE, related_name="filmography"
+    )
     character = models.CharField(max_length=255)
     order = models.IntegerField(default=0)
 
@@ -50,9 +52,13 @@ class MovieCast(models.Model):
 
 class Watchlist(models.Model):
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="watchlist",
     )
-    movie = models.ForeignKey(Movie, on_delete=models.CASCADE)
+    movie = models.ForeignKey(
+        Movie, on_delete=models.CASCADE, related_name="in_watchlist"
+    )
     added_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -69,9 +75,13 @@ class Watchlist(models.Model):
 
 class Rating(models.Model):
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="ratings",
     )
-    movie = models.ForeignKey(Movie, on_delete=models.CASCADE)
+    movie = models.ForeignKey(
+        Movie, on_delete=models.CASCADE, related_name="ratings"
+    )
     score = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -93,21 +103,33 @@ class Rating(models.Model):
 
 class Comment(models.Model):
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="comments",
     )
-    movie = models.ForeignKey(Movie, on_delete=models.CASCADE)
+    movie = models.ForeignKey(
+        Movie, on_delete=models.CASCADE, related_name="comments"
+    )
     text = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     parent = models.ForeignKey(
-        "self", on_delete=models.CASCADE, null=True, blank=True
+        "self",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="replies",
     )
 
 
 class CommentLike(models.Model):
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="comment_likes",
     )
-    comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
+    comment = models.ForeignKey(
+        Comment, on_delete=models.CASCADE, related_name="likes"
+    )
 
     class Meta:
         constraints = [
