@@ -21,3 +21,6 @@ staticfiles/
 
 # OS
 .DS_Store
+
+.coverage
+htmlcov/
