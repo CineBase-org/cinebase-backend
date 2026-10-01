@@ -17,7 +17,7 @@ class Movie(models.Model):
     release_date = models.DateField(null=True, blank=True)
     overview = models.TextField(blank=True)
     runtime = models.IntegerField(null=True, blank=True)
-    vote_average = models.FloatField(default=0)
+    vote_average = models.FloatField(default=0, db_index=True)
     vote_count = models.IntegerField(default=0)
     popularity = models.FloatField(default=0)
     poster_path = models.CharField(max_length=255, blank=True, null=True)
@@ -25,6 +25,9 @@ class Movie(models.Model):
 
     def __str__(self):
         return self.title
+
+    class Meta:
+        ordering = ["-popularity"]
 
 
 class Person(models.Model):
@@ -70,7 +73,7 @@ class Watchlist(models.Model):
         ]
 
     def __str__(self):
-        return self.movie
+        return str(self.movie)
 
 
 class Rating(models.Model):

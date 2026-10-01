@@ -40,7 +40,6 @@ def save_movie(movie_data):
         tmdb_id=movie_data["id"],
         defaults={
             "title": movie_data["title"],
-            "original_title": movie_data["original_title"],
             "overview": movie_data["overview"],
             "release_date": movie_data["release_date"] or None,
             "vote_average": movie_data["vote_average"],
@@ -48,15 +47,12 @@ def save_movie(movie_data):
             "popularity": movie_data["popularity"],
             "poster_path": movie_data["poster_path"],
             "backdrop_path": movie_data["backdrop_path"],
-            "original_language": movie_data["original_language"],
         },
     )
 
     details = get_movie_details(movie_data["id"])
 
     movie.runtime = details["runtime"]
-    movie.tagline = details["tagline"]
-    movie.status = details["status"]
     movie.save()
 
     genre_objects = []
@@ -90,7 +86,7 @@ def save_movie(movie_data):
 
 class Command(BaseCommand):
     def handle(self, *args, **options):
-        for page in range(1, 26):
+        for page in range(1, 101):
             data = get_popular_page(page)
             for movie_data in data["results"]:
                 save_movie(movie_data)
