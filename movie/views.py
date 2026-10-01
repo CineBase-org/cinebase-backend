@@ -1,3 +1,8 @@
+from drf_spectacular.utils import (
+    extend_schema_view,
+    extend_schema,
+    OpenApiParameter,
+)
 from rest_framework import viewsets
 
 from movie.models import Movie
@@ -5,6 +10,18 @@ from movie.permissions import IsAdminOrReadOnly
 from movie.serializers import MovieListSerializer, MovieDetailSerializer
 
 
+@extend_schema_view(
+    list=extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="genres",
+                description="Comma-separated genre ids to filter by, e.g. 1,5,12",
+                required=False,
+                type=str,
+            )
+        ]
+    )
+)
 class MovieViewSet(viewsets.ModelViewSet):
     queryset = Movie.objects.prefetch_related("genres")
     serializer_class = MovieListSerializer
