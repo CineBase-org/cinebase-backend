@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from movie.models import Movie, Genre, MovieCast
+from movie.models import Movie, Genre, MovieCast, Rating
 
 
 class ImageConfigSerializer(serializers.Serializer):
@@ -61,6 +61,8 @@ class MovieListSerializer(MovieSerializer):
 class MovieDetailSerializer(MovieSerializer):
     genres = GenreSerializer(many=True, read_only=True)
     cast = MovieCastSerializer(many=True, read_only=True)
+    average_rating = serializers.FloatField(read_only=True)
+    ratings_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Movie
@@ -75,4 +77,22 @@ class MovieDetailSerializer(MovieSerializer):
             "vote_average",
             "poster_path",
             "backdrop_path",
+            "average_rating",
+            "ratings_count",
         )
+
+
+class RatingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Rating
+        fields = ("score",)
+        extra_kwargs = {"score": {"min_value": 1, "max_value": 5}}
+
+    def validate_score(self, value):
+        if value < 1 or value > 5:
+            raise serializers.ValidationError("Score must be between 1 and 5")
+        return value
+
+
+class InWatchlistSerializer(serializers.Serializer):
+    in_watchlist = serializers.BooleanField(read_only=True)
