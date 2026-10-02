@@ -1,5 +1,13 @@
 from rest_framework import serializers
+
 from movie.models import Movie, Genre, MovieCast
+
+
+class ImageConfigSerializer(serializers.Serializer):
+    base_url = serializers.CharField()
+    poster_sizes = serializers.ListField(child=serializers.CharField())
+    backdrop_sizes = serializers.ListField(child=serializers.CharField())
+    profile_sizes = serializers.ListField(child=serializers.CharField())
 
 
 class GenreSerializer(serializers.ModelSerializer):
