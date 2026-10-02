@@ -47,7 +47,7 @@ class MovieApiTests(TestCase):
         self.genre = Genre.objects.create(tmdb_id=1, name="Fantasy")
 
     def test_list_success(self):
-        get_movie_list_res = self.client.get("/api/movie/movies/")
+        get_movie_list_res = self.client.get("/api/movies/")
         self.assertEqual(get_movie_list_res.status_code, status.HTTP_200_OK)
 
     def test_list_filter_by_genre(self):
@@ -59,7 +59,7 @@ class MovieApiTests(TestCase):
         )
         movie_without_genre.genres.add(other_genre)
 
-        res = self.client.get(f"/api/movie/movies/?genres={self.genre.id}")
+        res = self.client.get(f"/api/movies/?genres={self.genre.id}")
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data["results"]), 1)
