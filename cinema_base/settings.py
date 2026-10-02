@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "user",
     "rest_framework",
     "drf_spectacular",
+    "rest_framework_simplejwt",
 ]
 
 MIDDLEWARE = [
@@ -143,4 +144,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 14,
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
 }
