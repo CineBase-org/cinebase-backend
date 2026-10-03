@@ -123,6 +123,9 @@ class Comment(models.Model):
         related_name="replies",
     )
 
+    class Meta:
+        ordering = ["-created_at"]
+
 
 class CommentLike(models.Model):
     user = models.ForeignKey(

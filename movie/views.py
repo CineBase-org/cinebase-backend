@@ -1,4 +1,4 @@
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, Exists, OuterRef, Value, BooleanField
 from django.db.models.functions import Round
 from drf_spectacular.utils import (
     extend_schema_view,
@@ -7,7 +7,11 @@ from drf_spectacular.utils import (
 )
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import (
+    AllowAny,
+    IsAuthenticated,
+    IsAuthenticatedOrReadOnly,
+)
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -17,14 +21,15 @@ from movie.constants import (
     BACKDROP_SIZES,
     PROFILE_SIZES,
 )
-from movie.models import Movie, Rating, Watchlist
-from movie.permissions import IsAdminOrReadOnly
+from movie.models import Movie, Rating, Watchlist, Comment, CommentLike
+from movie.permissions import IsAdminOrReadOnly, IsAuthorOrAdminOrReadOnly
 from movie.serializers import (
     MovieListSerializer,
     MovieDetailSerializer,
     ImageConfigSerializer,
     RatingSerializer,
     InWatchlistSerializer,
+    CommentSerializer,
 )
 
 
@@ -181,3 +186,79 @@ class ImageConfigView(APIView):
                 "profile_sizes": PROFILE_SIZES,
             }
         )
+
+
+@extend_schema_view(
+    list=extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="movie",
+                description="Movie id to filter comments by",
+                required=False,
+                type=int,
+            )
+        ]
+    )
+)
+class CommentViewSet(viewsets.ModelViewSet):
+    queryset = Comment.objects.select_related("user").annotate(
+        likes_count=Count("likes", distinct=True)
+    )
+    serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrAdminOrReadOnly]
+
+    def get_queryset(self):
+        queryset = self.queryset
+
+        movie = self.request.query_params.get("movie")
+
+        if movie:
+            queryset = queryset.filter(movie_id=movie)
+
+        if self.request.user.is_authenticated:
+            liked = CommentLike.objects.filter(
+                user=self.request.user,
+                comment=OuterRef("pk"),
+            )
+            queryset = queryset.annotate(is_liked=Exists(liked))
+        else:
+            queryset = queryset.annotate(
+                is_liked=Value(False, output_field=BooleanField())
+            )
+
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    @action(
+        methods=["get", "put", "delete"],
+        detail=True,
+        url_path="likes",
+        permission_classes=[
+            IsAuthenticated,
+        ],
+    )
+    def likes(self, request, pk=None):
+        user = self.request.user
+        comment = self.get_object()
+
+        if request.method == "PUT":
+            liked, created = CommentLike.objects.get_or_create(
+                user=user, comment=comment
+            )
+            return Response(
+                {"liked": True},
+                status=(
+                    status.HTTP_201_CREATED if created else status.HTTP_200_OK
+                ),
+            )
+
+        if request.method == "DELETE":
+            like = CommentLike.objects.filter(
+                user=user, comment=comment
+            ).first()
+            if not like:
+                return Response({"liked": False}, status=status.HTTP_200_OK)
+            like.delete()
+            return Response({"liked": False}, status=status.HTTP_200_OK)

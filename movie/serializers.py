@@ -1,6 +1,7 @@
+from django.contrib.auth.models import AbstractUser
 from rest_framework import serializers
 
-from movie.models import Movie, Genre, MovieCast, Rating
+from movie.models import Movie, Genre, MovieCast, Rating, Comment
 
 
 class ImageConfigSerializer(serializers.Serializer):
@@ -96,3 +97,32 @@ class RatingSerializer(serializers.ModelSerializer):
 
 class InWatchlistSerializer(serializers.Serializer):
     in_watchlist = serializers.BooleanField(read_only=True)
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    author = serializers.SerializerMethodField()
+    likes_count = serializers.IntegerField(read_only=True)
+    is_liked = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = Comment
+        fields = (
+            "id",
+            "movie",
+            "text",
+            "created_at",
+            "parent",
+            "author",
+            "likes_count",
+            "is_liked",
+        )
+
+    def get_author(self, obj):
+        if obj.user.first_name and obj.user.last_name:
+            return f"{obj.user.first_name} {obj.user.last_name}"
+
+        if obj.user.first_name:
+            return f"{obj.user.first_name}"
+
+        else:
+            return f"User{obj.user.id}"
