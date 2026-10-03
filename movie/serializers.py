@@ -126,3 +126,20 @@ class CommentSerializer(serializers.ModelSerializer):
 
         else:
             return f"User{obj.user.id}"
+
+    def validate(self, attrs):
+        parent_comment = attrs.get("parent")
+        movie = attrs.get("movie")
+
+        if not parent_comment:
+            return attrs
+
+        if parent_comment.movie.id != movie.id:
+            raise serializers.ValidationError(
+                "Parent comment must belong to the same movie"
+            )
+
+        if parent_comment.parent:
+            raise serializers.ValidationError("Cannot reply to a reply")
+
+        return attrs

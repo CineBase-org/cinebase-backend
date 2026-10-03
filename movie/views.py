@@ -5,7 +5,7 @@ from drf_spectacular.utils import (
     extend_schema,
     OpenApiParameter,
 )
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, mixins
 from rest_framework.decorators import action
 from rest_framework.permissions import (
     AllowAny,
@@ -200,7 +200,13 @@ class ImageConfigView(APIView):
         ]
     )
 )
-class CommentViewSet(viewsets.ModelViewSet):
+class CommentViewSet(
+    mixins.RetrieveModelMixin,
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
     queryset = Comment.objects.select_related("user").annotate(
         likes_count=Count("likes", distinct=True)
     )
