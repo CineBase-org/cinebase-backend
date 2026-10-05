@@ -30,6 +30,7 @@ from movie.serializers import (
     RatingSerializer,
     InWatchlistSerializer,
     CommentSerializer,
+    CommentLikeStatusSerializer,
 )
 
 
@@ -80,8 +81,33 @@ class MovieViewSet(viewsets.ModelViewSet):
         return MovieDetailSerializer
 
     @extend_schema(
+        methods=["get"],
+        request=None,
+        responses={status.HTTP_200_OK: RatingSerializer},
+        description="Get the current user's rating for a movie. "
+        "Returns {'score': null} "
+        "if the user has not rated it yet.",
+    )
+    @extend_schema(
+        methods=["put"],
         request=RatingSerializer,
-        responses=RatingSerializer,
+        responses={
+            status.HTTP_200_OK: RatingSerializer,
+            status.HTTP_201_CREATED: RatingSerializer,
+        },
+        description="Rate a movie from 1 to 5. "
+        "Returns 201 if the rating was created, "
+        "200 if the existing rating was updated.",
+    )
+    @extend_schema(
+        methods=["delete"],
+        request=None,
+        responses={
+            status.HTTP_204_NO_CONTENT: None,
+            status.HTTP_404_NOT_FOUND: None,
+        },
+        description="Remove the current user's rating for a movie. "
+        "Returns 204 on success, 404 if the user had not rated it.",
     )
     @action(
         methods=["get", "put", "delete"],
@@ -123,7 +149,35 @@ class MovieViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(
-        responses=InWatchlistSerializer,
+        methods=["get"],
+        request=None,
+        responses={
+            status.HTTP_200_OK: InWatchlistSerializer,
+        },
+        description="Check whether a movie is in the current user's watchlist. "
+        "Returns {'in_watchlist': true} or {'in_watchlist': false}.",
+    )
+    @extend_schema(
+        methods=["put"],
+        request=None,
+        responses={
+            status.HTTP_200_OK: InWatchlistSerializer,
+            status.HTTP_201_CREATED: InWatchlistSerializer,
+        },
+        description="Add a movie to the current user's watchlist. "
+        "Returns 201 if it was added, "
+        "200 if it was already in the watchlist.",
+    )
+    @extend_schema(
+        methods=["delete"],
+        request=None,
+        responses={
+            status.HTTP_204_NO_CONTENT: None,
+            status.HTTP_404_NOT_FOUND: None,
+        },
+        description="Remove a movie from the current user's watchlist. "
+        "Returns 204 on success, "
+        "404 if it was not in the watchlist.",
     )
     @action(
         methods=["get", "put", "delete"],
@@ -237,8 +291,25 @@ class CommentViewSet(
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+    @extend_schema(
+        methods=["PUT"],
+        request=None,
+        responses={
+            status.HTTP_201_CREATED: CommentLikeStatusSerializer,
+            status.HTTP_200_OK: CommentLikeStatusSerializer,
+        },
+        description="Like a comment. Returns 201 if the like was created, "
+        "200 if the comment was already liked by the current user.",
+    )
+    @extend_schema(
+        methods=["DELETE"],
+        request=None,
+        responses={status.HTTP_200_OK: CommentLikeStatusSerializer},
+        description="Remove the current user's like from a comment. "
+        "Returns 200 with liked: false, whether the like existed or not.",
+    )
     @action(
-        methods=["get", "put", "delete"],
+        methods=["put", "delete"],
         detail=True,
         url_path="likes",
         permission_classes=[

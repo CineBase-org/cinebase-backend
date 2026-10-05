@@ -117,7 +117,7 @@ class CommentSerializer(serializers.ModelSerializer):
             "is_liked",
         )
 
-    def get_author(self, obj):
+    def get_author(self, obj) -> str:
         if obj.user.first_name and obj.user.last_name:
             return f"{obj.user.first_name} {obj.user.last_name}"
 
@@ -143,3 +143,7 @@ class CommentSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Cannot reply to a reply")
 
         return attrs
+
+
+class CommentLikeStatusSerializer(serializers.Serializer):
+    liked = serializers.BooleanField(read_only=True)

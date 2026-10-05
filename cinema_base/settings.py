@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "drf_spectacular",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
 ]
 
 MIDDLEWARE = [
@@ -150,6 +151,26 @@ REST_FRAMEWORK = {
     ),
 }
 
+SPECTACULAR_SETTINGS = {
+    "TITLE": "CineBase API",
+    "DESCRIPTION": (
+        "Backend API for the CineBase movie catalog.\n\n"
+        "Authentication: get an access token via POST /api/user/token/ "
+        'and send it in the Authorization header as "Bearer <token>". '
+        "Refresh it via /api/user/token/refresh/ when it expires.\n\n"
+        "Lists are paginated: responses contain count, next, previous "
+        "and results.\n\n"
+        "Images: poster_path, backdrop_path and profile_path are partial "
+        "paths. Build the full URL as base_url + size + path, using "
+        "GET /api/config/images/."
+    ),
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+}
+
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
 }
