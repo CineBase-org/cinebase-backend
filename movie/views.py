@@ -7,7 +7,6 @@ from drf_spectacular.utils import (
 )
 from rest_framework import viewsets, status, mixins, generics
 from rest_framework.decorators import action
-from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import (
     AllowAny,
     IsAuthenticated,
@@ -42,14 +41,21 @@ from movie.serializers import (
         description="Paginated list of movies, most popular first. "
         "Each item has a short set of fields for catalog cards. "
         "Use ?genres=1,5 to filter by one or more genre ids "
-        "and ?page=N to change the page.",
+        "and ?page=N to change the page."
+        "Use ?search=dune to find movies by title.",
         parameters=[
             OpenApiParameter(
                 name="genres",
                 description="Comma-separated genre ids to filter by, e.g. 1,5,12",
                 required=False,
                 type=str,
-            )
+            ),
+            OpenApiParameter(
+                name="search",
+                description="Case-insensitive part of the movie title, e.g. dune",
+                required=False,
+                type=str,
+            ),
         ],
     ),
     retrieve=extend_schema(
