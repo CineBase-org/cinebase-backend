@@ -98,6 +98,7 @@ class MovieViewSet(viewsets.ModelViewSet):
         methods=["get"],
         request=None,
         responses={status.HTTP_200_OK: RatingSerializer},
+        summary="Get my rating of a movie",
         description="Get the current user's rating for a movie. "
         "Returns {'score': null} "
         "if the user has not rated it yet.",
@@ -109,6 +110,7 @@ class MovieViewSet(viewsets.ModelViewSet):
             status.HTTP_200_OK: RatingSerializer,
             status.HTTP_201_CREATED: RatingSerializer,
         },
+        summary="Rate a movie",
         description="Rate a movie from 1 to 5. "
         "Returns 201 if the rating was created, "
         "200 if the existing rating was updated.",
@@ -120,6 +122,7 @@ class MovieViewSet(viewsets.ModelViewSet):
             status.HTTP_204_NO_CONTENT: None,
             status.HTTP_404_NOT_FOUND: None,
         },
+        summary="Remove my rating of a movie",
         description="Remove the current user's rating for a movie. "
         "Returns 204 on success, 404 if the user had not rated it.",
     )
@@ -168,6 +171,7 @@ class MovieViewSet(viewsets.ModelViewSet):
         responses={
             status.HTTP_200_OK: InWatchlistSerializer,
         },
+        summary="Check if a movie is in my watchlist",
         description="Check whether a movie is in the current user's watchlist. "
         "Returns {'in_watchlist': true} or {'in_watchlist': false}.",
     )
@@ -178,6 +182,7 @@ class MovieViewSet(viewsets.ModelViewSet):
             status.HTTP_200_OK: InWatchlistSerializer,
             status.HTTP_201_CREATED: InWatchlistSerializer,
         },
+        summary="Add a movie to my watchlist",
         description="Add a movie to the current user's watchlist. "
         "Returns 201 if it was added, "
         "200 if it was already in the watchlist.",
@@ -189,6 +194,7 @@ class MovieViewSet(viewsets.ModelViewSet):
             status.HTTP_204_NO_CONTENT: None,
             status.HTTP_404_NOT_FOUND: None,
         },
+        summary="Remove a movie from my watchlist",
         description="Remove a movie from the current user's watchlist. "
         "Returns 204 on success, "
         "404 if it was not in the watchlist.",
@@ -333,6 +339,7 @@ class CommentViewSet(
             status.HTTP_201_CREATED: CommentLikeStatusSerializer,
             status.HTTP_200_OK: CommentLikeStatusSerializer,
         },
+        summary="Like a comment",
         description="Like a comment. Returns 201 if the like was created, "
         "200 if the comment was already liked by the current user.",
     )
@@ -340,6 +347,7 @@ class CommentViewSet(
         methods=["DELETE"],
         request=None,
         responses={status.HTTP_200_OK: CommentLikeStatusSerializer},
+        summary="Remove my like from a comment",
         description="Remove the current user's like from a comment. "
         "Returns 200 with liked: false, whether the like existed or not.",
     )

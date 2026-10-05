@@ -162,7 +162,11 @@ SPECTACULAR_SETTINGS = {
         "and results.\n\n"
         "Images: poster_path, backdrop_path and profile_path are partial "
         "paths. Build the full URL as base_url + size + path, using "
-        "GET /api/config/images/."
+        "GET /api/config/images/.\n\n"
+        "Errors: validation errors (400) come as "
+        '{"field": ["message"]}. Other errors (401, 403, 404) come as '
+        '{"detail": "message"}. 401 means the access token is missing or '
+        "expired; 403 means the user has no permission for this action."
     ),
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
