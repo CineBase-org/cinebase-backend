@@ -5,8 +5,9 @@ from drf_spectacular.utils import (
     extend_schema,
     OpenApiParameter,
 )
-from rest_framework import viewsets, status, mixins
+from rest_framework import viewsets, status, mixins, generics
 from rest_framework.decorators import action
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import (
     AllowAny,
     IsAuthenticated,
@@ -21,7 +22,7 @@ from movie.constants import (
     BACKDROP_SIZES,
     PROFILE_SIZES,
 )
-from movie.models import Movie, Rating, Watchlist, Comment, CommentLike
+from movie.models import Movie, Rating, Watchlist, Comment, CommentLike, Genre
 from movie.permissions import IsAdminOrReadOnly, IsAuthorOrAdminOrReadOnly
 from movie.serializers import (
     MovieListSerializer,
@@ -31,6 +32,7 @@ from movie.serializers import (
     InWatchlistSerializer,
     CommentSerializer,
     CommentLikeStatusSerializer,
+    GenreSerializer,
 )
 
 
@@ -401,3 +403,18 @@ class CommentViewSet(
                 return Response({"liked": False}, status=status.HTTP_200_OK)
             like.delete()
             return Response({"liked": False}, status=status.HTTP_200_OK)
+
+
+@extend_schema_view(
+    get=extend_schema(
+        summary="List all genres",
+        description="Returns all genres as a plain array "
+        "(no pagination). Use the id of a genre in the genres filter of "
+        "GET /api/movies/, e.g. ?genres=1,5.",
+    )
+)
+class GenresListView(generics.ListAPIView):
+    queryset = Genre.objects.all()
+    serializer_class = GenreSerializer
+    permission_classes = [AllowAny]
+    pagination_class = None
