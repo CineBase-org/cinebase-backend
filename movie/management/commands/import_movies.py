@@ -90,11 +90,25 @@ def save_movie(movie_data):
                 "order": cast_member["order"],
             },
         )
+        return created
 
 
 class Command(BaseCommand):
     def handle(self, *args, **options):
+        created_count = 0
+        existing_count = 0
         for page in range(1, 101):
             data = get_popular_page(page)
+            self.stdout.write(self.style.SUCCESS(f"Page: {page}/100"))
             for movie_data in data["results"]:
-                save_movie(movie_data)
+                created = save_movie(movie_data)
+                if created:
+                    created_count += 1
+                else:
+                    existing_count += 1
+
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Created {created_count} movies, {existing_count} already existed"
+            )
+        )
