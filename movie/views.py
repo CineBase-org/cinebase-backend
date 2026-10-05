@@ -258,6 +258,12 @@ class ImageConfigView(APIView):
 
 @extend_schema_view(
     list=extend_schema(
+        summary="List all comments",
+        description="Paginated list of comments, newest first. "
+        "Pass ?movie=<id> to get comments of one movie. "
+        "Replies are returned in the same flat list with "
+        "the parent field set to the id of the comment they answer. "
+        "is_liked is false for anonymous users.",
         parameters=[
             OpenApiParameter(
                 name="movie",
@@ -265,8 +271,23 @@ class ImageConfigView(APIView):
                 required=False,
                 type=int,
             )
-        ]
-    )
+        ],
+    ),
+    create=extend_schema(
+        summary="Add a comment",
+        description="Authentication required. Send movie and text. "
+        "To reply to a comment, also send parent: "
+        "the id of a top-level comment of the same movie. "
+        "Replies to replies are not allowed.",
+    ),
+    destroy=extend_schema(
+        summary="Delete a comment",
+        description="Authentication required. "
+        "Only the author of the comment or an admin can delete it.",
+    ),
+    retrieve=extend_schema(
+        summary="Get a comment", description="Return a single comment by id."
+    ),
 )
 class CommentViewSet(
     mixins.RetrieveModelMixin,
