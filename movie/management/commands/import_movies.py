@@ -74,7 +74,7 @@ def save_movie(movie_data):
         genre_objects.append(genre)
     movie.genres.set(genre_objects)
 
-    for cast_member in details["credits"]["cast"][:10]:
+    for cast_member in details["credits"]["cast"][:5]:
         person, _ = Person.objects.get_or_create(
             tmdb_id=cast_member["id"],
             defaults={
@@ -90,7 +90,7 @@ def save_movie(movie_data):
                 "order": cast_member["order"],
             },
         )
-        return created
+    return created
 
 
 class Command(BaseCommand):
