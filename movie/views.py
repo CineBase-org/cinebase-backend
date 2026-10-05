@@ -57,7 +57,8 @@ from movie.serializers import (
         "average_rating is the average of ratings given by users of this site "
         "(1-5, rounded to one decimal) "
         "and is null if nobody has rated the movie yet; "
-        "vote_average is the TMDB rating (0-10).",
+        "vote_average is the TMDB rating (0-10). "
+        "trailer_url is a YouTube link, or null if the movie has no trailer.",
     ),
     create=extend_schema(
         summary="Create a movie (admin only)",
