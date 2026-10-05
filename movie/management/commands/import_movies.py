@@ -26,13 +26,20 @@ def get_movie_details(movie_id):
         {
             "api_key": API_KEY,
             "language": "en-US",
-            "append_to_response": "credits",
+            "append_to_response": "credits,videos",
         }
     )
     url = f"{BASE_URL}/movie/{movie_id}?{params}"
 
     with urllib.request.urlopen(url) as response:
         return json.loads(response.read().decode())
+
+
+def pick_trailer_key(videos: list):
+    for video in videos:
+        if video.get("site") == "YouTube" and video.get("type") == "Trailer":
+            return video.get("key")
+    return None
 
 
 def save_movie(movie_data):
@@ -53,6 +60,7 @@ def save_movie(movie_data):
     details = get_movie_details(movie_data["id"])
 
     movie.runtime = details["runtime"]
+    movie.trailer_youtube_id = pick_trailer_key(details["videos"]["results"])
     movie.save()
 
     genre_objects = []

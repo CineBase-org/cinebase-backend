@@ -22,6 +22,7 @@ class Movie(models.Model):
     popularity = models.FloatField(default=0)
     poster_path = models.CharField(max_length=255, blank=True, null=True)
     backdrop_path = models.CharField(max_length=255, blank=True, null=True)
+    trailer_youtube_id = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return self.title
