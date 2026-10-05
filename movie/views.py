@@ -104,7 +104,7 @@ class MovieViewSet(viewsets.ModelViewSet):
         search = self.request.query_params.get("search", "").strip()
 
         if search:
-            queryset = queryset.filter(title__icontains=search)
+            queryset = queryset.filter(title__istartswith=search)
 
         if genres:
             genres_ids = self._params_to_ints(genres)
