@@ -36,6 +36,11 @@ from movie.serializers import (
 
 @extend_schema_view(
     list=extend_schema(
+        summary="List all movies",
+        description="Paginated list of movies, most popular first. "
+        "Each item has a short set of fields for catalog cards. "
+        "Use ?genres=1,5 to filter by one or more genre ids "
+        "and ?page=N to change the page.",
         parameters=[
             OpenApiParameter(
                 name="genres",
@@ -43,8 +48,17 @@ from movie.serializers import (
                 required=False,
                 type=str,
             )
-        ]
-    )
+        ],
+    ),
+    retrieve=extend_schema(
+        summary="Get movie details",
+        description="Full movie data for the movie page: "
+        "overview, genres, cast, poster and backdrop paths. "
+        "average_rating is the average of ratings given by users of this site "
+        "(1-5, rounded to one decimal) "
+        "and is null if nobody has rated the movie yet; "
+        "vote_average is the TMDB rating (0-10).",
+    ),
 )
 class MovieViewSet(viewsets.ModelViewSet):
     queryset = Movie.objects.prefetch_related("genres")
