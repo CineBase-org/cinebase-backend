@@ -59,6 +59,24 @@ from movie.serializers import (
         "and is null if nobody has rated the movie yet; "
         "vote_average is the TMDB rating (0-10).",
     ),
+    create=extend_schema(
+        summary="Create a movie (admin only)",
+        description="Admin only. Create a movie manually "
+        "(normally movies are imported from TMDB).",
+    ),
+    update=extend_schema(
+        summary="Replace a movie (admin only)",
+        description="Admin only. Replace all editable fields of a movie.",
+    ),
+    partial_update=extend_schema(
+        summary="Update a movie (admin only)",
+        description="Admin only. Update only the provided fields of a movie.",
+    ),
+    destroy=extend_schema(
+        summary="Delete a movie (admin only)",
+        description="Admin only. Delete a movie together with its ratings, "
+        "comments and watchlist entries.",
+    ),
 )
 class MovieViewSet(viewsets.ModelViewSet):
     queryset = Movie.objects.prefetch_related("genres")
