@@ -97,9 +97,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         created_count = 0
         existing_count = 0
-        for page in range(1, 101):
+        for page in range(1, 251):
             data = get_popular_page(page)
-            self.stdout.write(self.style.SUCCESS(f"Page: {page}/100"))
+            self.stdout.write(self.style.SUCCESS(f"Page: {page}/250"))
             for movie_data in data["results"]:
                 created = save_movie(movie_data)
                 if created:
