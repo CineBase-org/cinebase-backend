@@ -61,3 +61,6 @@ class UserProfile(models.Model):
     bio = models.TextField(blank=True)
     location = models.CharField(max_length=255, blank=True)
     birth_date = models.DateField(blank=True, null=True)
+
+    def __str__(self):
+        return f"User profile {self.user.id}"
