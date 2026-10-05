@@ -92,8 +92,13 @@ class MovieViewSet(viewsets.ModelViewSet):
         return [int(str_id) for str_id in qs.split(",")]
 
     def get_queryset(self):
-        genres = self.request.query_params.get("genres")
         queryset = self.queryset
+
+        genres = self.request.query_params.get("genres")
+        search = self.request.query_params.get("search", "").strip()
+
+        if search:
+            queryset = queryset.filter(title__icontains=search)
 
         if genres:
             genres_ids = self._params_to_ints(genres)
