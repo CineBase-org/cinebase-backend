@@ -47,7 +47,7 @@ class MovieCast(models.Model):
     person = models.ForeignKey(
         Person, on_delete=models.CASCADE, related_name="filmography"
     )
-    character = models.CharField(max_length=255)
+    character = models.TextField()
     order = models.IntegerField(default=0)
 
     def __str__(self):
