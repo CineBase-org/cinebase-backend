@@ -1,8 +1,7 @@
 from rest_framework import status
 
-
-from movie.models import Movie, Genre
-from movie.tests.helpers import BaseApiTestCase
+from movie.models import Movie, Genre, Rating
+from movie.tests.helpers import BaseApiTestCase, create_user, create_movie
 
 
 class MovieListTests(BaseApiTestCase):
@@ -77,9 +76,44 @@ class MovieDetailTests(BaseApiTestCase):
     def setUp(self):
         super().setUp()
         self.url = f"/api/movies/{self.movie.id}/"
+
     def test_retrieve_movie(self):
         self.client.force_authenticate(user=None)
         get_res = self.client.get(self.url)
         self.assertEqual(get_res.status_code, status.HTTP_200_OK)
         self.assertEqual(get_res.data["title"], self.movie.title)
         self.assertEqual(get_res.data["id"], self.movie.id)
+
+    def test_retrieve_movie_ratings_summary(self):
+        other_user = create_user(email="test@test.com", password="testtest")
+        Rating.objects.create(user=self.user, movie=self.movie, score=2)
+        Rating.objects.create(user=other_user, movie=self.movie, score=4)
+        get_res = self.client.get(self.url)
+        self.assertEqual(get_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(get_res.data["average_rating"], 3.0)
+        self.assertEqual(get_res.data["ratings_count"], 2)
+
+    def test_retrieve_movie_without_ratings(self):
+        get_res = self.client.get(self.url)
+        self.assertEqual(get_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(get_res.data["average_rating"], None)
+        self.assertEqual(get_res.data["ratings_count"], 0)
+
+    def test_retrieve_movie_trailer_url(self):
+        movie_with_trailer = create_movie(
+            tmdb_id=5, title="Trailer", trailer_youtube_id="abc123"
+        )
+        get_res = self.client.get(self.url)
+        self.assertEqual(get_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(get_res.data["trailer_url"], None)
+
+        get_res_2 = self.client.get(f"/api/movies/{movie_with_trailer.id}/")
+        self.assertEqual(get_res_2.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            get_res_2.data["trailer_url"],
+            f"https://www.youtube.com/watch?v={movie_with_trailer.trailer_youtube_id}",
+        )
+
+    def test_retrieve_missing_movie(self):
+        get_res = self.client.get("/api/movies/99999/")
+        self.assertEqual(get_res.status_code, status.HTTP_404_NOT_FOUND)
