@@ -73,24 +73,51 @@ from movie.serializers import (
         "and is null if nobody has rated the movie yet; "
         "vote_average is the TMDB rating (0-10). "
         "trailer_url is a YouTube link, or null if the movie has no trailer.",
+        responses={status.HTTP_200_OK: MovieDetailSerializer, **NOT_FOUND},
     ),
     create=extend_schema(
         summary="Create a movie (admin only)",
         description="Admin only. Create a movie manually "
         "(normally movies are imported from TMDB).",
+        responses={
+            status.HTTP_201_CREATED: MovieDetailSerializer,
+            **UNAUTHORIZED,
+            **FORBIDDEN,
+            **BAD_REQUEST,
+        },
     ),
     update=extend_schema(
         summary="Replace a movie (admin only)",
         description="Admin only. Replace all editable fields of a movie.",
+        responses={
+            status.HTTP_200_OK: MovieDetailSerializer,
+            **UNAUTHORIZED,
+            **FORBIDDEN,
+            **NOT_FOUND,
+            **BAD_REQUEST,
+        },
     ),
     partial_update=extend_schema(
         summary="Update a movie (admin only)",
         description="Admin only. Update only the provided fields of a movie.",
+        responses={
+            status.HTTP_200_OK: MovieDetailSerializer,
+            **UNAUTHORIZED,
+            **FORBIDDEN,
+            **NOT_FOUND,
+            **BAD_REQUEST,
+        },
     ),
     destroy=extend_schema(
         summary="Delete a movie (admin only)",
         description="Admin only. Delete a movie together with its ratings, "
         "comments and watchlist entries.",
+        responses={
+            status.HTTP_204_NO_CONTENT: None,
+            **UNAUTHORIZED,
+            **FORBIDDEN,
+            **NOT_FOUND,
+        },
     ),
 )
 class MovieViewSet(viewsets.ModelViewSet):
