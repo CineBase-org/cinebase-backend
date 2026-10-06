@@ -7,6 +7,7 @@ from drf_spectacular.utils import (
 )
 from rest_framework import viewsets, status, mixins, generics
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import (
     AllowAny,
     IsAuthenticated,
@@ -63,6 +64,10 @@ from movie.serializers import (
                 type=str,
             ),
         ],
+        responses={
+            status.HTTP_200_OK: MovieListSerializer,
+            **BAD_REQUEST,
+        },
     ),
     retrieve=extend_schema(
         summary="Get movie details",
@@ -128,7 +133,16 @@ class MovieViewSet(viewsets.ModelViewSet):
     @staticmethod
     def _params_to_ints(qs):
         """Converts a list of string IDs to a list of integers"""
-        return [int(str_id) for str_id in qs.split(",")]
+        try:
+            return [int(str_id) for str_id in qs.split(",")]
+        except ValueError:
+            raise ValidationError(
+                {
+                    "genres": [
+                        "Expected a comma-separated list of integers, e.g. 1,5."
+                    ]
+                }
+            )
 
     def get_queryset(self):
         queryset = self.queryset
@@ -358,6 +372,7 @@ class ImageConfigView(APIView):
         ],
         responses={
             status.HTTP_200_OK: CommentSerializer,
+            **BAD_REQUEST,
         },
     ),
     create=extend_schema(
@@ -399,8 +414,10 @@ class CommentViewSet(
     mixins.DestroyModelMixin,
     viewsets.GenericViewSet,
 ):
-    queryset = Comment.objects.select_related("user").annotate(
-        likes_count=Count("likes", distinct=True)
+    queryset = (
+        Comment.objects.select_related("user")
+        .annotate(likes_count=Count("likes", distinct=True))
+        .order_by("-created_at")
     )
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrAdminOrReadOnly]
@@ -411,7 +428,13 @@ class CommentViewSet(
         movie = self.request.query_params.get("movie")
 
         if movie:
-            queryset = queryset.filter(movie_id=movie)
+            try:
+                movie_id = int(movie)
+            except ValueError:
+                raise ValidationError(
+                    {"movie": ["Expected an integer movie id."]}
+                )
+            queryset = queryset.filter(movie_id=movie_id)
 
         if self.request.user.is_authenticated:
             liked = CommentLike.objects.filter(
