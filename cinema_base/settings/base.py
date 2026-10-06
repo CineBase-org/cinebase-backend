@@ -151,23 +151,61 @@ REST_FRAMEWORK = {
 SPECTACULAR_SETTINGS = {
     "TITLE": "CineBase API",
     "DESCRIPTION": (
-        "Backend API for the CineBase movie catalog.\n\n"
-        "Authentication: get an access token via POST /api/user/token/ "
-        'and send it in the Authorization header as "Bearer <token>". '
-        "Refresh it via /api/user/token/refresh/ when it expires.\n\n"
-        "Lists are paginated: responses contain count, next, previous "
-        "and results.\n\n"
-        "Images: poster_path, backdrop_path and profile_path are partial "
-        "paths. Build the full URL as base_url + size + path, using "
-        "GET /api/config/images/.\n\n"
-        "Errors: validation errors (400) come as "
-        '{"field": ["message"]}. Other errors (401, 403, 404) come as '
-        '{"detail": "message"}. 401 means the access token is missing or '
-        "expired; 403 means the user has no permission for this action."
+        "Backend for the **CineBase** movie catalog: browse and search "
+        "movies, rate them, keep a watchlist and discuss them in comments.\n\n"
+        "**Authentication.** Register via `POST /api/user/register/`, "
+        "then log in via `POST /api/user/token/` with your email and "
+        "password. Copy the `access` token from the response, click the "
+        "**Authorize** button at the top of this page and paste the token "
+        "there. Now all requests are sent as you. "
+        "The access token lives 60 minutes: when it expires, get a new one "
+        "via `POST /api/user/token/refresh/` (the refresh token lives "
+        "7 days) and paste it into **Authorize** again.\n\n"
+        "**Pagination.** Lists return `count`, `next`, `previous` and "
+        "`results`; use `?page=N`.\n\n"
+        "**Images.** `poster_path`, `backdrop_path` and `profile_path` are "
+        "partial paths. Full URL = `base_url` + `size` + `path`, "
+        "see `GET /api/config/images/`.\n\n"
+        '**Errors.** `400` validation: `{"field": ["message"]}`. '
+        "`401` token missing or expired, `403` no permission, `404` not "
+        'found: all three come as `{"detail": "message"}`.'
     ),
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "SCHEMA_PATH_PREFIX": "/api",
+    "TAGS": [
+        {
+            "name": "user",
+            "description": "Registration, login and profile.\n\n"
+            "- **No token needed:** `register`, `token`, `token/refresh`, "
+            "`token/verify`\n"
+            "- **Needs a token:** `me`",
+        },
+        {
+            "name": "movies",
+            "description": "Catalog, search, filters and movie details.\n\n"
+            "- **No token needed:** list, search, filter, details\n"
+            "- **Needs a token:** my rating, my watchlist\n"
+            "- **Admin only:** create, edit, delete movies",
+        },
+        {
+            "name": "comments",
+            "description": "Comments, replies and likes.\n\n"
+            "- **No token needed:** read comments\n"
+            "- **Needs a token:** add a comment, like\n"
+            "- **Author or admin:** delete a comment",
+        },
+        {
+            "name": "genres",
+            "description": "List of genres for the movie filter. "
+            "**No token needed.**",
+        },
+        {
+            "name": "config",
+            "description": "Base URL and sizes for building image links. "
+            "**No token needed.**",
+        },
+    ],
 }
 
 SIMPLE_JWT = {
