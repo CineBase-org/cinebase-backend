@@ -1,3 +1,14 @@
+from rest_framework_simplejwt.serializers import (
+    TokenObtainPairSerializer,
+    TokenRefreshSerializer,
+    TokenVerifySerializer,
+)
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+    TokenVerifyView,
+)
+
 from drf_spectacular.utils import extend_schema_view, extend_schema
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
@@ -46,3 +57,55 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user.profile
+
+
+@extend_schema_view(
+    post=extend_schema(
+        summary="Log in (get token)",
+        description="Log in with email and password. "
+        "Returns an access token (valid for 60 minutes) and a refresh token "
+        "(valid for 7 days). Send the access token in the header: "
+        "Authorization: Bearer <access>.",
+        responses={
+            200: TokenObtainPairSerializer,
+            **BAD_REQUEST,
+            **UNAUTHORIZED,
+        },
+    )
+)
+class LoginView(TokenObtainPairView):
+    pass
+
+
+@extend_schema_view(
+    post=extend_schema(
+        summary="Refresh access token",
+        description="Send a refresh token to get a new access token. "
+        "Returns 401 if the refresh token is invalid or expired "
+        "(it is valid for 7 days). In that case the user must log in again.",
+        responses={
+            200: TokenRefreshSerializer,
+            **BAD_REQUEST,
+            **UNAUTHORIZED,
+        },
+    )
+)
+class RefreshView(TokenRefreshView):
+    pass
+
+
+@extend_schema_view(
+    post=extend_schema(
+        summary="Verify a token",
+        description="Check that a token is valid and not expired. "
+        "Returns 200 with an empty object if it is valid, "
+        "401 if it is invalid or expired.",
+        responses={
+            200: TokenVerifySerializer,
+            **BAD_REQUEST,
+            **UNAUTHORIZED,
+        },
+    )
+)
+class VerifyView(TokenVerifyView):
+    pass
