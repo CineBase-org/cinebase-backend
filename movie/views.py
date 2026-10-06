@@ -15,6 +15,7 @@ from rest_framework.permissions import (
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from cinema_base.schema_errors import UNAUTHORIZED, NOT_FOUND, BAD_REQUEST
 from movie.constants import (
     TMDB_IMAGE_BASE_URL,
     POSTER_SIZES,
@@ -129,7 +130,11 @@ class MovieViewSet(viewsets.ModelViewSet):
     @extend_schema(
         methods=["get"],
         request=None,
-        responses={status.HTTP_200_OK: RatingSerializer},
+        responses={
+            status.HTTP_200_OK: RatingSerializer,
+            **UNAUTHORIZED,
+            **NOT_FOUND,
+        },
         summary="Get my rating of a movie",
         description="Get the current user's rating for a movie. "
         "Returns {'score': null} "
@@ -141,6 +146,9 @@ class MovieViewSet(viewsets.ModelViewSet):
         responses={
             status.HTTP_200_OK: RatingSerializer,
             status.HTTP_201_CREATED: RatingSerializer,
+            **UNAUTHORIZED,
+            **NOT_FOUND,
+            **BAD_REQUEST,
         },
         summary="Rate a movie",
         description="Rate a movie from 1 to 5. "
@@ -152,7 +160,8 @@ class MovieViewSet(viewsets.ModelViewSet):
         request=None,
         responses={
             status.HTTP_204_NO_CONTENT: None,
-            status.HTTP_404_NOT_FOUND: None,
+            **NOT_FOUND,
+            **UNAUTHORIZED,
         },
         summary="Remove my rating of a movie",
         description="Remove the current user's rating for a movie. "
@@ -202,6 +211,8 @@ class MovieViewSet(viewsets.ModelViewSet):
         request=None,
         responses={
             status.HTTP_200_OK: InWatchlistSerializer,
+            **UNAUTHORIZED,
+            **NOT_FOUND,
         },
         summary="Check if a movie is in my watchlist",
         description="Check whether a movie is in the current user's watchlist. "
@@ -213,6 +224,8 @@ class MovieViewSet(viewsets.ModelViewSet):
         responses={
             status.HTTP_200_OK: InWatchlistSerializer,
             status.HTTP_201_CREATED: InWatchlistSerializer,
+            **UNAUTHORIZED,
+            **NOT_FOUND,
         },
         summary="Add a movie to my watchlist",
         description="Add a movie to the current user's watchlist. "
@@ -224,7 +237,8 @@ class MovieViewSet(viewsets.ModelViewSet):
         request=None,
         responses={
             status.HTTP_204_NO_CONTENT: None,
-            status.HTTP_404_NOT_FOUND: None,
+            **NOT_FOUND,
+            **UNAUTHORIZED,
         },
         summary="Remove a movie from my watchlist",
         description="Remove a movie from the current user's watchlist. "
