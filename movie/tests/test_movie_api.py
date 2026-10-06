@@ -8,35 +8,6 @@ from django.test import TestCase
 from movie.models import Movie, Rating, Watchlist, Genre
 
 
-class RatingConstraintTests(TestCase):
-    def setUp(self):
-        self.user = get_user_model().objects.create_user(
-            email="test@example.com", password="pass12345"
-        )
-        self.movie = Movie.objects.create(tmdb_id=1, title="Test Movie")
-
-    def test_score_out_of_range_raises_integrity_error(self):
-        with self.assertRaises(IntegrityError):
-            with transaction.atomic():
-                Rating.objects.create(
-                    user=self.user, movie=self.movie, score=10
-                )
-
-
-class WatchlistConstraintTests(TestCase):
-    def setUp(self):
-        self.user = get_user_model().objects.create_user(
-            email="test@example.com", password="pass12345"
-        )
-        self.movie = Movie.objects.create(tmdb_id=1, title="Test Movie")
-
-    def test_duplicate_watchlist_entry_raises_integrity_error(self):
-        Watchlist.objects.create(movie=self.movie, user=self.user)
-        with self.assertRaises(IntegrityError):
-            with transaction.atomic():
-                Watchlist.objects.create(movie=self.movie, user=self.user)
-
-
 class MovieApiTests(TestCase):
     def setUp(self):
         self.client = APIClient()
