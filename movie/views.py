@@ -48,18 +48,20 @@ from movie.serializers import (
         description="Paginated list of movies, most popular first. "
         "Each item has a short set of fields for catalog cards. "
         "Use ?genres=1,5 to filter by one or more genre ids "
-        "and ?page=N to change the page."
-        "Use ?search=dune to find movies by title.",
+        "and ?page=N to change the page. "
+        "Use ?search=du to find movies whose title starts with 'du'. "
+        "Each page has 14 movies.",
         parameters=[
             OpenApiParameter(
                 name="genres",
-                description="Comma-separated genre ids to filter by, e.g. 1,5,12",
+                description="Comma-separated genre ids (from GET /api/genres/). "
+                "A movie matches if it has any of them, e.g. 1,5",
                 required=False,
                 type=str,
             ),
             OpenApiParameter(
                 name="search",
-                description="Case-insensitive part of the movie title, e.g. dune",
+                description="Case-insensitive start of the movie title, e.g. 'du' finds 'Dune'",
                 required=False,
                 type=str,
             ),
@@ -515,7 +517,8 @@ class CommentViewSet(
         summary="List all genres",
         description="Returns all genres as a plain array "
         "(no pagination). Use the id of a genre in the genres filter of "
-        "GET /api/movies/, e.g. ?genres=1,5.",
+        "GET /api/movies/, e.g. ?genres=1,5. "
+        "These are CineBase ids, not TMDB ids.",
     )
 )
 class GenresListView(generics.ListAPIView):
