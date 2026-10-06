@@ -1,3 +1,7 @@
+from drf_spectacular.utils import extend_schema_view, extend_schema
+from rest_framework import generics
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.serializers import (
     TokenObtainPairSerializer,
     TokenRefreshSerializer,
@@ -8,11 +12,6 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
     TokenVerifyView,
 )
-
-from drf_spectacular.utils import extend_schema_view, extend_schema
-from rest_framework import generics
-from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from cinema_base.schema_errors import BAD_REQUEST, UNAUTHORIZED
 from user.serializers import UserSerializer, UserProfileSerializer
