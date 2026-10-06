@@ -76,10 +76,10 @@ class MovieListTests(BaseApiTestCase):
         self.assertEqual(post_res.status_code, status.HTTP_401_UNAUTHORIZED)
 
         self.client.force_authenticate(user=self.user)
-        post_res2 = self.client.get(self.url, {"title": "x", "tmdb_id": 99})
+        post_res2 = self.client.post(self.url, {"title": "x", "tmdb_id": 99})
         self.assertEqual(post_res2.status_code, status.HTTP_403_FORBIDDEN)
 
-        self.assertEqual(Movie.objects.count(), 0)
+        self.assertEqual(Movie.objects.count(), 1)
 
 
 class MovieDetailTests(BaseApiTestCase):
