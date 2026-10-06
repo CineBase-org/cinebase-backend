@@ -5,7 +5,7 @@ from movie.models import Movie, Genre
 from movie.tests.helpers import BaseApiTestCase
 
 
-class MovieApiTests(BaseApiTestCase):
+class MovieListTests(BaseApiTestCase):
     def setUp(self):
         super().setUp()
         self.genre = Genre.objects.create(tmdb_id=1, name="Fantasy")
@@ -71,3 +71,15 @@ class MovieApiTests(BaseApiTestCase):
         self.assertEqual(get_res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(get_res.data["results"]), 1)
         self.assertEqual(get_res.data["results"][0]["title"], "Dune")
+
+
+class MovieDetailTests(BaseApiTestCase):
+    def setUp(self):
+        super().setUp()
+        self.url = f"/api/movies/{self.movie.id}/"
+    def test_retrieve_movie(self):
+        self.client.force_authenticate(user=None)
+        get_res = self.client.get(self.url)
+        self.assertEqual(get_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(get_res.data["title"], self.movie.title)
+        self.assertEqual(get_res.data["id"], self.movie.id)
