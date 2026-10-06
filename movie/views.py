@@ -15,7 +15,12 @@ from rest_framework.permissions import (
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from cinema_base.schema_errors import UNAUTHORIZED, NOT_FOUND, BAD_REQUEST
+from cinema_base.schema_errors import (
+    UNAUTHORIZED,
+    NOT_FOUND,
+    BAD_REQUEST,
+    FORBIDDEN,
+)
 from movie.constants import (
     TMDB_IMAGE_BASE_URL,
     POSTER_SIZES,
@@ -324,6 +329,9 @@ class ImageConfigView(APIView):
                 type=int,
             )
         ],
+        responses={
+            status.HTTP_200_OK: CommentSerializer,
+        },
     ),
     create=extend_schema(
         summary="Add a comment",
@@ -331,14 +339,30 @@ class ImageConfigView(APIView):
         "To reply to a comment, also send parent: "
         "the id of a top-level comment of the same movie. "
         "Replies to replies are not allowed.",
+        responses={
+            status.HTTP_201_CREATED: CommentSerializer,
+            **UNAUTHORIZED,
+            **BAD_REQUEST,
+        },
     ),
     destroy=extend_schema(
         summary="Delete a comment",
         description="Authentication required. "
         "Only the author of the comment or an admin can delete it.",
+        responses={
+            status.HTTP_204_NO_CONTENT: None,
+            **UNAUTHORIZED,
+            **FORBIDDEN,
+            **NOT_FOUND,
+        },
     ),
     retrieve=extend_schema(
-        summary="Get a comment", description="Return a single comment by id."
+        summary="Get a comment",
+        description="Return a single comment by id.",
+        responses={
+            status.HTTP_200_OK: CommentSerializer,
+            **NOT_FOUND,
+        },
     ),
 )
 class CommentViewSet(
@@ -384,6 +408,8 @@ class CommentViewSet(
         responses={
             status.HTTP_201_CREATED: CommentLikeStatusSerializer,
             status.HTTP_200_OK: CommentLikeStatusSerializer,
+            **UNAUTHORIZED,
+            **NOT_FOUND,
         },
         summary="Like a comment",
         description="Like a comment. Returns 201 if the like was created, "
@@ -392,7 +418,11 @@ class CommentViewSet(
     @extend_schema(
         methods=["DELETE"],
         request=None,
-        responses={status.HTTP_200_OK: CommentLikeStatusSerializer},
+        responses={
+            status.HTTP_200_OK: CommentLikeStatusSerializer,
+            **UNAUTHORIZED,
+            **NOT_FOUND,
+        },
         summary="Remove my like from a comment",
         description="Remove the current user's like from a comment. "
         "Returns 200 with liked: false, whether the like existed or not.",
