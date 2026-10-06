@@ -109,8 +109,8 @@ class InWatchlistSerializer(serializers.Serializer):
 
 class CommentSerializer(serializers.ModelSerializer):
     author = serializers.SerializerMethodField()
-    likes_count = serializers.IntegerField(read_only=True)
-    is_liked = serializers.BooleanField(read_only=True)
+    likes_count = serializers.IntegerField(read_only=True, default=0)
+    is_liked = serializers.BooleanField(read_only=True, default=False)
 
     class Meta:
         model = Comment
