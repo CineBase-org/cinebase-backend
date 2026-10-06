@@ -170,9 +170,6 @@ class MovieViewSet(viewsets.ModelViewSet):
         if self.action == "list":
             return MovieListSerializer
 
-        if self.action == "retrieve":
-            return MovieDetailSerializer
-
         return MovieDetailSerializer
 
     @extend_schema(
