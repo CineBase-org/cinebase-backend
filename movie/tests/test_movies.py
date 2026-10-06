@@ -71,6 +71,16 @@ class MovieListTests(BaseApiTestCase):
         self.assertEqual(len(get_res.data["results"]), 1)
         self.assertEqual(get_res.data["results"][0]["title"], "Dune")
 
+    def test_create_movie_requires_admin(self):
+        post_res = self.client.post(self.url, {"title": "x", "tmdb_id": 99})
+        self.assertEqual(post_res.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        self.client.force_authenticate(user=self.user)
+        post_res2 = self.client.get(self.url, {"title": "x", "tmdb_id": 99})
+        self.assertEqual(post_res2.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.assertEqual(Movie.objects.count(), 0)
+
 
 class MovieDetailTests(BaseApiTestCase):
     def setUp(self):
