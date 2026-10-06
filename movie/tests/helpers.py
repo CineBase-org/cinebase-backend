@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
-from movie.models import Movie
+from movie.models import Movie, Comment
 
 
 class BaseApiTestCase(TestCase):
@@ -19,3 +19,9 @@ def create_user(email="test@example.com", password="pass12345", **params):
 
 def create_movie(tmdb_id=1, title="Test Movie", **params):
     return Movie.objects.create(tmdb_id=tmdb_id, title=title, **params)
+
+
+def create_comment(user, movie, text="Nice movie", parent=None):
+    return Comment.objects.create(
+        user=user, movie=movie, text=text, parent=parent
+    )
