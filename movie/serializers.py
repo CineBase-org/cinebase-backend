@@ -27,6 +27,8 @@ class MovieCastSerializer(serializers.ModelSerializer):
 
 
 class MovieSerializer(serializers.ModelSerializer):
+    trailer_url = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = Movie
         fields = (
@@ -39,7 +41,14 @@ class MovieSerializer(serializers.ModelSerializer):
             "vote_count",
             "popularity",
             "poster_path",
+            "trailer_url",
         )
+
+    def get_trailer_url(self, obj) -> str | None:
+        if not obj.trailer_youtube_id:
+            return None
+
+        return "https://www.youtube.com/watch?v=" + obj.trailer_youtube_id
 
 
 class MovieListSerializer(MovieSerializer):
@@ -56,6 +65,7 @@ class MovieListSerializer(MovieSerializer):
             "release_date",
             "vote_average",
             "poster_path",
+            "trailer_url",
         )
 
 
@@ -64,7 +74,6 @@ class MovieDetailSerializer(MovieSerializer):
     cast = MovieCastSerializer(many=True, read_only=True)
     average_rating = serializers.FloatField(read_only=True)
     ratings_count = serializers.IntegerField(read_only=True)
-    trailer_url = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Movie
@@ -83,12 +92,6 @@ class MovieDetailSerializer(MovieSerializer):
             "ratings_count",
             "trailer_url",
         )
-
-    def get_trailer_url(self, obj) -> str | None:
-        if not obj.trailer_youtube_id:
-            return None
-
-        return "https://www.youtube.com/watch?v=" + obj.trailer_youtube_id
 
 
 class RatingSerializer(serializers.ModelSerializer):
