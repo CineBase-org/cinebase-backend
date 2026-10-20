@@ -1,3 +1,4 @@
+import datetime
 import os
 import json
 import time
@@ -19,6 +20,9 @@ PLATFORM_LOGO_SIZE = "w92"
 REQUEST_TIMEOUT = 15
 MAX_RETRIES = 4
 LAST_PAGE = 250
+NEW_RELEASES_DAYS = 30
+SOURCES = ("popular", "new")
+DEFAULT_PAGES = {"popular": LAST_PAGE, "new": 5}
 
 
 def fetch_json(url):
@@ -40,12 +44,24 @@ def fetch_json(url):
         time.sleep(2 ** (attempt - 1))
 
 
-def get_popular_page(page):
-    params = urllib.parse.urlencode(
-        {"api_key": API_KEY, "language": "en-US", "page": page}
-    )
-    url = f"{BASE_URL}/movie/popular?{params}"
-
+def get_movies_page(source, page):
+    params = {"api_key": API_KEY, "language": "en-US", "page": page}
+    if source == "popular":
+        path = "/movie/popular"
+    else:  # "new"
+        today = datetime.date.today()
+        path = "/discover/movie"
+        params.update(
+            {
+                "sort_by": "popularity.desc",
+                "include_adult": "false",
+                "primary_release_date.gte": (
+                    today - datetime.timedelta(days=NEW_RELEASES_DAYS)
+                ).isoformat(),
+                "primary_release_date.lte": today.isoformat(),
+            }
+        )
+    url = f"{BASE_URL}{path}?{urllib.parse.urlencode(params)}"
     return fetch_json(url)
 
 
@@ -147,15 +163,27 @@ class Command(BaseCommand):
         parser.add_argument(
             "--pages",
             type=int,
-            default=LAST_PAGE,
-            help="How many pages to import",
+            default=None,
+            help="How many pages to import (default: 250 for popular, 5 for new)",
+        )
+        parser.add_argument(
+            "--source",
+            choices=SOURCES,
+            default="popular",
+            help="Where to take movies from: popular list or recent releases",
         )
 
     def handle(self, *args, **options):
+        source = options["source"]
+        pages = (
+            DEFAULT_PAGES[source]
+            if options["pages"] is None
+            else options["pages"]
+        )
         start_page = options["start_page"]
-        end_page = min(start_page + options["pages"] - 1, LAST_PAGE)
+        end_page = min(start_page + pages - 1, LAST_PAGE)
 
-        if start_page < 1 or options["pages"] < 1:
+        if start_page < 1 or pages < 1:
             raise CommandError("--start-page and --pages must be 1 or more")
 
         created_count = 0
@@ -165,7 +193,7 @@ class Command(BaseCommand):
 
         for page in range(start_page, end_page + 1):
             try:
-                data = get_popular_page(page)
+                data = get_movies_page(source, page)
             except Exception as e:
                 failed.append(f"page {page}: {e}")
                 self.stderr.write(
