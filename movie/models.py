@@ -23,6 +23,7 @@ class Movie(models.Model):
     poster_path = models.CharField(max_length=255, blank=True, null=True)
     backdrop_path = models.CharField(max_length=255, blank=True, null=True)
     trailer_youtube_id = models.TextField(blank=True, null=True)
+    streaming_platforms = models.JSONField(default=list, blank=True)
 
     def __str__(self):
         return self.title
