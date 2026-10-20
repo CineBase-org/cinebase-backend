@@ -91,6 +91,7 @@ class MovieDetailSerializer(MovieSerializer):
             "average_rating",
             "ratings_count",
             "trailer_url",
+            "streaming_platforms",
         )
 
 
