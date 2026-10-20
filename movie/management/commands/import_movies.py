@@ -161,6 +161,7 @@ class Command(BaseCommand):
         created_count = 0
         existing_count = 0
         failed = []
+        not_found = []
 
         for page in range(start_page, end_page + 1):
             try:
@@ -179,6 +180,12 @@ class Command(BaseCommand):
                     with transaction.atomic():
                         created = save_movie(movie_data)
                 except Exception as e:
+                    if isinstance(e, urllib.error.HTTPError) and e.code == 404:
+                        not_found.append(movie_data["id"])
+                        self.stdout.write(
+                            f"Not found in TMDB, skipped: {movie_data['id']}"
+                        )
+                        continue
                     failed.append(f"movie {movie_data['id']}: {e}")
                     self.stderr.write(
                         self.style.WARNING(
@@ -194,9 +201,12 @@ class Command(BaseCommand):
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"Created {created_count} movies, "
-                f"{existing_count} already existed, {len(failed)} failed"
+                f"Created {created_count} movies, {existing_count} already existed, "
+                f"{len(not_found)} not found in TMDB, {len(failed)} failed"
             )
         )
         for item in failed:
             self.stdout.write(self.style.WARNING(f"  failed: {item}"))
+
+        if failed:
+            raise CommandError(f"Import finished with {len(failed)} failures")
