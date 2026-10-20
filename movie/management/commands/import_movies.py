@@ -5,10 +5,14 @@ import urllib.request
 
 from django.core.management import BaseCommand
 
+from movie.constants import TMDB_IMAGE_BASE_URL
 from movie.models import Movie, Genre, Person, MovieCast
 
 API_KEY = os.environ.get("API_KEY")
 BASE_URL = "https://api.themoviedb.org/3"
+PLATFORMS_COUNTRY = "US"
+PLATFORM_TYPES = ("flatrate", "rent", "buy")
+PLATFORM_LOGO_SIZE = "w92"
 
 
 def get_popular_page(page):
@@ -26,7 +30,7 @@ def get_movie_details(movie_id):
         {
             "api_key": API_KEY,
             "language": "en-US",
-            "append_to_response": "credits,videos",
+            "append_to_response": "credits,videos,watch/providers",
         }
     )
     url = f"{BASE_URL}/movie/{movie_id}?{params}"
@@ -43,7 +47,7 @@ def pick_trailer_key(videos: list):
 
 
 def save_movie(movie_data):
-    movie, created = Movie.objects.get_or_create(
+    movie, created = Movie.objects.update_or_create(
         tmdb_id=movie_data["id"],
         defaults={
             "title": movie_data["title"],
@@ -61,6 +65,22 @@ def save_movie(movie_data):
 
     movie.runtime = details["runtime"]
     movie.trailer_youtube_id = pick_trailer_key(details["videos"]["results"])
+    providers_data = details.get("watch/providers", {}).get("results", {})
+    country_data = providers_data.get(PLATFORMS_COUNTRY, {})
+    platforms = {}
+    for platform_type in PLATFORM_TYPES:
+        for platform in country_data.get(platform_type, []):
+            logo_path = platform.get("logo_path")
+            platforms[platform["provider_id"]] = {
+                "id": platform["provider_id"],
+                "name": platform["provider_name"],
+                "logo_url": (
+                    f"{TMDB_IMAGE_BASE_URL}{PLATFORM_LOGO_SIZE}{logo_path}"
+                    if logo_path
+                    else None
+                ),
+            }
+    movie.streaming_platforms = list(platforms.values())
     movie.save()
 
     genre_objects = []
