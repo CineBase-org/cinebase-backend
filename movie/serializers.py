@@ -26,6 +26,12 @@ class MovieCastSerializer(serializers.ModelSerializer):
         fields = ("id", "name", "profile_path", "character", "order")
 
 
+class StreamingPlatformSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+    logo_url = serializers.CharField(allow_null=True)
+
+
 class MovieSerializer(serializers.ModelSerializer):
     trailer_url = serializers.SerializerMethodField(read_only=True)
 
@@ -74,6 +80,9 @@ class MovieDetailSerializer(MovieSerializer):
     cast = MovieCastSerializer(many=True, read_only=True)
     average_rating = serializers.FloatField(read_only=True)
     ratings_count = serializers.IntegerField(read_only=True)
+    streaming_platforms = StreamingPlatformSerializer(
+        many=True, read_only=True
+    )
 
     class Meta:
         model = Movie
