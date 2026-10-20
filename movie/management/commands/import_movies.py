@@ -1,7 +1,9 @@
 import os
 import json
+import time
 import urllib.parse
 import urllib.request
+import urllib.error
 
 from django.core.management import BaseCommand
 
@@ -13,6 +15,27 @@ BASE_URL = "https://api.themoviedb.org/3"
 PLATFORMS_COUNTRY = "US"
 PLATFORM_TYPES = ("flatrate", "rent", "buy")
 PLATFORM_LOGO_SIZE = "w92"
+REQUEST_TIMEOUT = 15
+MAX_RETRIES = 4
+
+
+def fetch_json(url):
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            with urllib.request.urlopen(
+                url, timeout=REQUEST_TIMEOUT
+            ) as response:
+                return json.loads(response.read().decode())
+        except urllib.error.HTTPError as e:
+            if (
+                e.code not in (429, 500, 502, 503, 504)
+                or attempt == MAX_RETRIES
+            ):
+                raise
+        except (urllib.error.URLError, TimeoutError):
+            if attempt == MAX_RETRIES:
+                raise
+        time.sleep(2 ** (attempt - 1))
 
 
 def get_popular_page(page):
@@ -21,8 +44,7 @@ def get_popular_page(page):
     )
     url = f"{BASE_URL}/movie/popular?{params}"
 
-    with urllib.request.urlopen(url) as response:
-        return json.loads(response.read().decode())
+    return fetch_json(url)
 
 
 def get_movie_details(movie_id):
@@ -35,8 +57,7 @@ def get_movie_details(movie_id):
     )
     url = f"{BASE_URL}/movie/{movie_id}?{params}"
 
-    with urllib.request.urlopen(url) as response:
-        return json.loads(response.read().decode())
+    return fetch_json(url)
 
 
 def pick_trailer_key(videos: list):
@@ -117,11 +138,32 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         created_count = 0
         existing_count = 0
+        failed = []
+
         for page in range(1, 251):
-            data = get_popular_page(page)
+            try:
+                data = get_popular_page(page)
+            except Exception as e:
+                failed.append(f"page {page}: {e}")
+                self.stderr.write(
+                    self.style.WARNING(f"Skipped page {page}: {e}")
+                )
+                continue
+
             self.stdout.write(self.style.SUCCESS(f"Page: {page}/250"))
+
             for movie_data in data["results"]:
-                created = save_movie(movie_data)
+                try:
+                    created = save_movie(movie_data)
+                except Exception as e:
+                    failed.append(f"movie {movie_data['id']}: {e}")
+                    self.stderr.write(
+                        self.style.WARNING(
+                            f"Skipped movie {movie_data['id']}: {e}"
+                        )
+                    )
+                    continue
+
                 if created:
                     created_count += 1
                 else:
@@ -129,6 +171,9 @@ class Command(BaseCommand):
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"Created {created_count} movies, {existing_count} already existed"
+                f"Created {created_count} movies, "
+                f"{existing_count} already existed, {len(failed)} failed"
             )
         )
+        for item in failed:
+            self.stdout.write(self.style.WARNING(f"  failed: {item}"))
