@@ -5,7 +5,7 @@ import urllib.parse
 import urllib.request
 import urllib.error
 
-from django.core.management import BaseCommand
+from django.core.management import BaseCommand, CommandError
 from django.db import transaction
 
 from movie.constants import TMDB_IMAGE_BASE_URL
@@ -18,6 +18,7 @@ PLATFORM_TYPES = ("flatrate", "rent", "buy")
 PLATFORM_LOGO_SIZE = "w92"
 REQUEST_TIMEOUT = 15
 MAX_RETRIES = 4
+LAST_PAGE = 250
 
 
 def fetch_json(url):
@@ -136,12 +137,32 @@ def save_movie(movie_data):
 
 
 class Command(BaseCommand):
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--start-page",
+            type=int,
+            default=1,
+            help="Page to start from (to resume an interrupted import)",
+        )
+        parser.add_argument(
+            "--pages",
+            type=int,
+            default=LAST_PAGE,
+            help="How many pages to import",
+        )
+
     def handle(self, *args, **options):
+        start_page = options["start_page"]
+        end_page = min(start_page + options["pages"] - 1, LAST_PAGE)
+
+        if start_page < 1 or options["pages"] < 1:
+            raise CommandError("--start-page and --pages must be 1 or more")
+
         created_count = 0
         existing_count = 0
         failed = []
 
-        for page in range(1, 251):
+        for page in range(start_page, end_page + 1):
             try:
                 data = get_popular_page(page)
             except Exception as e:
@@ -151,7 +172,7 @@ class Command(BaseCommand):
                 )
                 continue
 
-            self.stdout.write(self.style.SUCCESS(f"Page: {page}/250"))
+            self.stdout.write(self.style.SUCCESS(f"Page: {page}/{end_page}"))
 
             for movie_data in data["results"]:
                 try:
