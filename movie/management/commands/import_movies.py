@@ -6,6 +6,7 @@ import urllib.request
 import urllib.error
 
 from django.core.management import BaseCommand
+from django.db import transaction
 
 from movie.constants import TMDB_IMAGE_BASE_URL
 from movie.models import Movie, Genre, Person, MovieCast
@@ -154,7 +155,8 @@ class Command(BaseCommand):
 
             for movie_data in data["results"]:
                 try:
-                    created = save_movie(movie_data)
+                    with transaction.atomic():
+                        created = save_movie(movie_data)
                 except Exception as e:
                     failed.append(f"movie {movie_data['id']}: {e}")
                     self.stderr.write(
