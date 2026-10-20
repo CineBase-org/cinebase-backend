@@ -11,6 +11,9 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
+RUN SECRET_KEY=build-only DJANGO_SETTINGS_MODULE=cinema_base.settings.prod \
+    python manage.py collectstatic --noinput
+
 EXPOSE 8000
 
 CMD ["gunicorn", "cinema_base.wsgi:application", "--bind", "0.0.0.0:8000"]
