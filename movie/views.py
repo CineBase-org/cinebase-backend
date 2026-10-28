@@ -360,7 +360,10 @@ class ImageConfigView(APIView):
         "Pass ?movie=<id> to get comments of one movie. "
         "Replies are returned in the same flat list with "
         "the parent field set to the id of the comment they answer. "
-        "is_liked is false for anonymous users.",
+        "is_liked is false for anonymous users. "
+        "author is the display name, author_avatar is an absolute URL "
+        "of the author's avatar or null if they have none: "
+        "the client should show a placeholder itself.",
         parameters=[
             OpenApiParameter(
                 name="movie",
@@ -414,7 +417,7 @@ class CommentViewSet(
     viewsets.GenericViewSet,
 ):
     queryset = (
-        Comment.objects.select_related("user")
+        Comment.objects.select_related("user__profile")
         .annotate(likes_count=Count("likes", distinct=True))
         .order_by("-created_at")
     )

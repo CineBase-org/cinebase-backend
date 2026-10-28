@@ -122,6 +122,12 @@ class InWatchlistSerializer(serializers.Serializer):
 
 class CommentSerializer(serializers.ModelSerializer):
     author = serializers.SerializerMethodField()
+    author_avatar = serializers.ImageField(
+        source="user.profile.avatar",
+        read_only=True,
+        allow_null=True,
+        help_text="Absolute URL of the author's avatar, or null if none",
+    )
     likes_count = serializers.IntegerField(read_only=True, default=0)
     is_liked = serializers.BooleanField(read_only=True, default=False)
 
@@ -134,6 +140,7 @@ class CommentSerializer(serializers.ModelSerializer):
             "created_at",
             "parent",
             "author",
+            "author_avatar",
             "likes_count",
             "is_liked",
         )
