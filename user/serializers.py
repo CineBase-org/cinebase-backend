@@ -3,6 +3,9 @@ from rest_framework import serializers
 
 from user.models import UserProfile
 
+MAX_AVATAR_SIZE = 5 * 1024 * 1024
+ALLOWED_AVATAR_FORMATS = ["JPEG", "PNG", "WEBP"]
+
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -42,6 +45,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "bio",
             "location",
             "birth_date",
+            "avatar",
         )
 
     def update(self, instance, validated_data):
@@ -57,3 +61,16 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
         user_profile = super().update(instance, validated_data)
         return user_profile
+
+    def validate_avatar(self, value):
+        if value is None:
+            return value
+
+        if value.size > MAX_AVATAR_SIZE:
+            raise serializers.ValidationError("Avatar must be at most 5 MB")
+
+        if value.image.format not in ALLOWED_AVATAR_FORMATS:
+            raise serializers.ValidationError(
+                "Allowed formats: JPEG, PNG, WEBP"
+            )
+        return value

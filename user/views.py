@@ -34,18 +34,29 @@ class CreateUserView(generics.CreateAPIView):
     get=extend_schema(
         summary="Get my profile",
         description="Return the current user's profile "
-        "(first name, last name, bio, location, birth date).",
+        "(first name, last name, bio, location, birth date, avatar). "
+        "`avatar` is an absolute URL of the image, or `null` if the user "
+        "has not uploaded one: the client should show a placeholder itself.",
         responses={200: UserProfileSerializer, **UNAUTHORIZED},
     ),
     put=extend_schema(
         summary="Replace my profile",
         description="Update the current user's profile. "
-        "All fields are optional.",
+        "All fields are optional.\n\n"
+        "**Avatar.** To upload an avatar, send the request as "
+        "`multipart/form-data` with the image in the `avatar` field "
+        "(a JSON body cannot carry a file). Allowed formats: JPEG, PNG, WEBP. "
+        "Maximum size: 5 MB. Send `avatar: null` to remove the avatar.",
         responses={200: UserProfileSerializer, **UNAUTHORIZED, **BAD_REQUEST},
     ),
     patch=extend_schema(
         summary="Partially update my profile",
-        description="Update only the provided profile fields.",
+        description="Update only the provided profile fields.\n\n"
+        "**Avatar.** To upload an avatar, send the request as "
+        "`multipart/form-data` with the image in the `avatar` field "
+        "(a JSON body cannot carry a file). Allowed formats: JPEG, PNG, WEBP. "
+        "Maximum size: 5 MB. Send `avatar: null` to remove the avatar. "
+        "Other fields can still be sent as plain JSON.",
         responses={200: UserProfileSerializer, **UNAUTHORIZED, **BAD_REQUEST},
     ),
 )
