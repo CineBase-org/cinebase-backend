@@ -264,3 +264,25 @@ class CommentDeleteTests(CommentBaseTestCase):
         create_comment(self.user, self.movie)
         delete_res_1 = self.client.delete(self.url + "99999/")
         self.assertEqual(delete_res_1.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class CommentAuthorAvatarTests(CommentBaseTestCase):
+    def test_author_avatar_is_null_without_avatar(self):
+        create_comment(self.user, self.movie)
+
+        res = self.client.get(self.url)
+
+        self.assertIsNone(res.data["results"][0]["author_avatar"])
+
+    def test_author_avatar_url(self):
+        self.user.profile.avatar = "avatars/photo.png"
+        self.user.profile.save()
+        create_comment(self.user, self.movie)
+
+        res = self.client.get(self.url)
+
+        self.assertTrue(
+            res.data["results"][0]["author_avatar"].endswith(
+                "/media/avatars/photo.png"
+            )
+        )

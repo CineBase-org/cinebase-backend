@@ -1,3 +1,5 @@
+import random
+
 from django.db.models import Avg, Count, Exists, OuterRef, Value, BooleanField
 from django.db.models.functions import Round
 from drf_spectacular.utils import (
@@ -7,7 +9,7 @@ from drf_spectacular.utils import (
 )
 from rest_framework import viewsets, status, mixins, generics
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, NotFound
 from rest_framework.permissions import (
     AllowAny,
     IsAuthenticated,
@@ -146,6 +148,32 @@ class MovieViewSet(viewsets.ModelViewSet):
                 }
             )
 
+    @staticmethod
+    def _with_detail(queryset):
+        """Add the fields the detail serializer needs"""
+        return queryset.annotate(
+            average_rating=Round(Avg("ratings__score"), 1),
+            ratings_count=Count("ratings", distinct=True),
+        ).prefetch_related("cast__person")
+
+    @staticmethod
+    def _parse_param(request, name, cast, min_value=None, max_value=None):
+        """Read a numeric query param, or None if it was not passed"""
+        value = request.query_params.get(name)
+        if value is None:
+            return None
+        try:
+            number = cast(value)
+        except ValueError:
+            raise ValidationError({name: ["Expected a number."]})
+        if (min_value is not None and number < min_value) or (
+            max_value is not None and number > max_value
+        ):
+            raise ValidationError(
+                {name: [f"Must be between {min_value} and {max_value}."]}
+            )
+        return number
+
     def get_queryset(self):
         queryset = self.queryset
 
@@ -160,16 +188,12 @@ class MovieViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(genres__id__in=genres_ids)
 
         if self.action == "retrieve":
-            queryset = queryset.annotate(
-                average_rating=Round(Avg("ratings__score"), 1),
-                ratings_count=Count("ratings", distinct=True),
-            ).prefetch_related("cast__person")
+            queryset = self._with_detail(queryset)
         return queryset.distinct()
 
     def get_serializer_class(self):
         if self.action == "list":
             return MovieListSerializer
-
         return MovieDetailSerializer
 
     @extend_schema(
@@ -329,6 +353,75 @@ class MovieViewSet(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_404_NOT_FOUND)
             in_watchlist.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @extend_schema(
+        summary="Get a random movie",
+        description="Return one random movie that matches all the given "
+        "filters. The response has the same format as "
+        "GET /api/movies/{id}/. Returns 404 if no movie matches. "
+        "All parameters are optional.",
+        parameters=[
+            OpenApiParameter(
+                name="genres",
+                description="Comma-separated genre ids, e.g. 1,5. "
+                "A movie matches if it has any of them.",
+                required=False,
+                type=str,
+            ),
+            OpenApiParameter(
+                name="min_rating",
+                description="Minimum TMDB rating from 0 to 10, e.g. 7.5",
+                required=False,
+                type=float,
+            ),
+            OpenApiParameter(
+                name="year_from",
+                description="Release year not earlier than this, e.g. 2000",
+                required=False,
+                type=int,
+            ),
+            OpenApiParameter(
+                name="year_to",
+                description="Release year not later than this, e.g. 2020",
+                required=False,
+                type=int,
+            ),
+        ],
+        responses={
+            status.HTTP_200_OK: MovieDetailSerializer,
+            **BAD_REQUEST,
+            **NOT_FOUND,
+        },
+    )
+    @action(
+        methods=["get"],
+        detail=False,
+        url_path="random",
+    )
+    def random(self, request):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        min_rating = self._parse_param(request, "min_rating", float, 0, 10)
+        year_from = self._parse_param(request, "year_from", int, 1, 9999)
+        year_to = self._parse_param(request, "year_to", int, 1, 9999)
+
+        if min_rating is not None:
+            queryset = queryset.filter(vote_average__gte=min_rating)
+        if year_from is not None:
+            queryset = queryset.filter(release_date__year__gte=year_from)
+        if year_to is not None:
+            queryset = queryset.filter(release_date__year__lte=year_to)
+
+        count = queryset.count()
+        if count == 0:
+            raise NotFound("No movies match the filters.")
+
+        movie_id = queryset.values_list("pk", flat=True)[
+            random.randrange(count)
+        ]
+        movie = self._with_detail(Movie.objects.filter(pk=movie_id)).get()
+
+        return Response(self.get_serializer(movie).data)
 
 
 class ImageConfigView(APIView):
