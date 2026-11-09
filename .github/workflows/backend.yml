@@ -71,7 +71,6 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ github.sha }}
-
   deploy-to-ecs:
     permissions:
       contents: read
@@ -112,11 +111,22 @@ jobs:
             '.containerDefinitions[0].image = $IMAGE_URI' \
             task-def-clean.json > task-def-new.json
 
-      - name: Deploy ECS task definition
+      - name: Register ECS task definition and run database migrations
+        id: run-migrations
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
-          task-definition: task-def-new.json
           cluster: ${{ vars.ECS_CLUSTER_NAME }}
+          run-task: true
+          run-task-launch-type: EC2
+          task-definition: task-def-new.json
           service: ${{ vars.ECS_SERVICE_NAME }}
+          run-task-container-overrides: |
+            [
+              {
+                "name": "cinebase-container",
+                "command": ["python", "manage.py", "migrate", "--noinput"]
+              }
+            ]
+          wait-for-task-stopped: true
+          wait-max-delay-seconds: 15
           wait-for-service-stability: true
-
