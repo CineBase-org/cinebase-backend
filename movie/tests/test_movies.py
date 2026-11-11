@@ -28,18 +28,42 @@ class MovieListTests(BaseApiTestCase):
         self.assertEqual(len(res.data["results"]), 1)
         self.assertEqual(res.data["results"][0]["title"], self.movie.title)
 
-    def test_list_filter_by_multiple_genres(self):
-        self.movie.genres.add(self.other_genre)
-        movie2 = Movie.objects.create(tmdb_id=2, title="Test Movie")
-        movie2.genres.add(self.genre)
-        Movie.objects.create(tmdb_id=3, title="Movie")
-        get_res = self.client.get(
+    def test_list_filter_by_multiple_genres_requires_all(self):
+        self.movie.genres.add(self.genre)
+        movie_other = Movie.objects.create(tmdb_id=2, title="Other only")
+        movie_other.genres.add(self.other_genre)
+        movie_both = Movie.objects.create(tmdb_id=3, title="Both genres")
+        movie_both.genres.add(self.genre, self.other_genre)
+
+        res = self.client.get(
             self.url + f"?genres={self.genre.id},{self.other_genre.id}"
         )
 
-        self.assertEqual(get_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data["results"]), 1)
+        self.assertEqual(res.data["results"][0]["id"], movie_both.id)
 
-        self.assertEqual(len(get_res.data["results"]), 2)
+    def test_list_filter_by_one_genre_includes_movies_with_more(self):
+        self.movie.genres.add(self.genre)
+        movie_both = Movie.objects.create(tmdb_id=2, title="Both genres")
+        movie_both.genres.add(self.genre, self.other_genre)
+        movie_other = Movie.objects.create(tmdb_id=3, title="Other only")
+        movie_other.genres.add(self.other_genre)
+
+        res = self.client.get(self.url + f"?genres={self.genre.id}")
+
+        ids = {item["id"] for item in res.data["results"]}
+        self.assertEqual(ids, {self.movie.id, movie_both.id})
+
+    def test_list_filter_duplicate_genre_ids(self):
+        self.movie.genres.add(self.genre)
+
+        res = self.client.get(
+            self.url + f"?genres={self.genre.id},{self.genre.id}"
+        )
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data["results"]), 1)
 
     def test_list_invalid_genres_param(self):
         get_res = self.client.get(self.url + "?genres=invalid")
