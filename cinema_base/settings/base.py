@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "movie",
     "user",
+    "analytics",
     "rest_framework",
     "drf_spectacular",
     "rest_framework_simplejwt",
@@ -149,6 +150,7 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
+    "DEFAULT_THROTTLE_RATES": {"analytics": "60/min"},
 }
 
 SPECTACULAR_SETTINGS = {
@@ -177,6 +179,13 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "SCHEMA_PATH_PREFIX": "/api",
     "TAGS": [
+        {
+            "name": "analytics",
+            "description": "Tracking of user activity events for product "
+            "analytics.\n\n"
+            "- **No token needed:** a token is optional and links the "
+            "visitor to the user",
+        },
         {
             "name": "user",
             "description": "Registration, login and profile.\n\n"

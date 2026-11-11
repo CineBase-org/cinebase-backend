@@ -43,6 +43,7 @@ urlpatterns = [
         name="redoc",
     ),
     path("health/", Healthy.as_view(), name="health"),
+    path("api/analytics/", include("analytics.urls", namespace="analytics")),
 ]
 
 if settings.DEBUG:

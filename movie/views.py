@@ -49,7 +49,7 @@ from movie.serializers import (
         summary="List all movies",
         description="Paginated list of movies, most popular first. "
         "Each item has a short set of fields for catalog cards. "
-        "Use ?genres=1,5 to filter by one or more genre ids "
+        "Use ?genres=1,5 to get only movies that have all of these genres "
         "and ?page=N to change the page. "
         "Use ?search=du to find movies whose title starts with 'du'. "
         "Each page has 14 movies.",
@@ -57,7 +57,7 @@ from movie.serializers import (
             OpenApiParameter(
                 name="genres",
                 description="Comma-separated genre ids (from GET /api/genres/). "
-                "A movie matches if it has any of them, e.g. 1,5",
+                "A movie matches only if it has all of them, e.g. 1,5",
                 required=False,
                 type=str,
             ),
@@ -185,7 +185,8 @@ class MovieViewSet(viewsets.ModelViewSet):
 
         if genres:
             genres_ids = self._params_to_ints(genres)
-            queryset = queryset.filter(genres__id__in=genres_ids)
+            for genre_id in set(genres_ids):
+                queryset = queryset.filter(genres__id=genre_id)
 
         if self.action == "retrieve":
             queryset = self._with_detail(queryset)
@@ -364,7 +365,7 @@ class MovieViewSet(viewsets.ModelViewSet):
             OpenApiParameter(
                 name="genres",
                 description="Comma-separated genre ids, e.g. 1,5. "
-                "A movie matches if it has any of them.",
+                "A movie matches only if it has all of them.",
                 required=False,
                 type=str,
             ),
