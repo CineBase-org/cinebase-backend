@@ -1,9 +1,83 @@
-from datetime import date
+from datetime import date, timedelta
 
+from django.utils import timezone
 from rest_framework import status
 
 from movie.models import Movie, Genre
-from movie.tests.helpers import BaseApiTestCase, create_movie
+from movie.tests.helpers import BaseApiTestCase, create_movie, create_user
+from payments.models import Subscription
+from payments.tests.helpers import create_subscription
+
+
+class MovieRandomAccessTests(BaseApiTestCase):
+    """The MoviePicker is a paid feature"""
+
+    def setUp(self):
+        super().setUp()
+        self.url = "/api/movies/random/"
+
+    def test_anonymous_gets_401(self):
+        res = self.client.get(self.url)
+
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_user_without_subscription_gets_403_with_code(self):
+        self.client.force_authenticate(self.user)
+
+        res = self.client.get(self.url)
+
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(res.data["code"], "subscription_required")
+        self.assertIn("detail", res.data)
+
+    def test_user_with_active_subscription_gets_movie(self):
+        create_subscription(self.user)
+        self.client.force_authenticate(self.user)
+
+        res = self.client.get(self.url)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data["id"], self.movie.id)
+
+    def test_not_active_subscription_gets_403(self):
+        self.client.force_authenticate(self.user)
+        for value in (
+            Subscription.Status.PAST_DUE,
+            Subscription.Status.UNPAID,
+            Subscription.Status.CANCELED,
+            Subscription.Status.INCOMPLETE,
+        ):
+            with self.subTest(status=value):
+                Subscription.objects.all().delete()
+                create_subscription(self.user, status=value)
+
+                res = self.client.get(self.url)
+
+                self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_subscription_with_finished_period_gets_403(self):
+        create_subscription(
+            self.user, current_period_end=timezone.now() - timedelta(hours=1)
+        )
+        self.client.force_authenticate(self.user)
+
+        res = self.client.get(self.url)
+
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_other_users_subscription_does_not_help(self):
+        stranger = create_user(email="stranger@example.com")
+        create_subscription(stranger)
+        self.client.force_authenticate(self.user)
+
+        res = self.client.get(self.url)
+
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_catalog_stays_public(self):
+        res = self.client.get("/api/movies/")
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
 
 
 class MovieRandomTests(BaseApiTestCase):
@@ -11,6 +85,9 @@ class MovieRandomTests(BaseApiTestCase):
         super().setUp()
         self.genre = Genre.objects.create(tmdb_id=1, name="Fantasy")
         self.url = "/api/movies/random/"
+        # These tests are about the choice of a movie, not about access
+        create_subscription(self.user)
+        self.client.force_authenticate(self.user)
 
     def test_random_returns_detail_movie(self):
         res = self.client.get(self.url)

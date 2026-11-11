@@ -42,6 +42,7 @@ from movie.serializers import (
     CommentLikeStatusSerializer,
     GenreSerializer,
 )
+from payments.permissions import HasActiveSubscription
 
 
 @extend_schema_view(
@@ -360,7 +361,12 @@ class MovieViewSet(viewsets.ModelViewSet):
         description="Return one random movie that matches all the given "
         "filters. The response has the same format as "
         "GET /api/movies/{id}/. Returns 404 if no movie matches. "
-        "All parameters are optional.",
+        "All parameters are optional.\n\n"
+        "**Paid feature (MoviePicker).** Needs a token and an active "
+        "subscription (see `GET /api/payments/subscription/`). "
+        "Without a token the answer is `401`. With a token but without an "
+        'active subscription it is `403` with `{"detail": "...", '
+        '"code": "subscription_required"}`: show the **Subscribe** button.',
         parameters=[
             OpenApiParameter(
                 name="genres",
@@ -391,6 +397,8 @@ class MovieViewSet(viewsets.ModelViewSet):
         responses={
             status.HTTP_200_OK: MovieDetailSerializer,
             **BAD_REQUEST,
+            **UNAUTHORIZED,
+            **FORBIDDEN,
             **NOT_FOUND,
         },
     )
@@ -398,6 +406,7 @@ class MovieViewSet(viewsets.ModelViewSet):
         methods=["get"],
         detail=False,
         url_path="random",
+        permission_classes=[IsAuthenticated, HasActiveSubscription],
     )
     def random(self, request):
         queryset = self.filter_queryset(self.get_queryset())
