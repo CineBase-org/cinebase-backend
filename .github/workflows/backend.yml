@@ -135,4 +135,3 @@ jobs:
           wait-for-task-stopped: true
           wait-max-delay-seconds: 15
           wait-for-service-stability: true
-
