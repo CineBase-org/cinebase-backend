@@ -6,6 +6,7 @@ from movie.views import (
     ImageConfigView,
     CommentViewSet,
     GenresListView,
+    WatchlistListView,
 )
 
 router = routers.DefaultRouter()
@@ -16,6 +17,7 @@ urlpatterns = [
     path("", include(router.urls)),
     path("config/images/", ImageConfigView.as_view(), name="image_config"),
     path("genres/", GenresListView.as_view(), name="genres"),
+    path("watchlist/", WatchlistListView.as_view(), name="watchlist"),
 ]
 
 app_name = "movie"

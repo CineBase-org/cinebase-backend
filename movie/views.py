@@ -620,3 +620,28 @@ class GenresListView(generics.ListAPIView):
     serializer_class = GenreSerializer
     permission_classes = [AllowAny]
     pagination_class = None
+
+
+@extend_schema_view(
+    get=extend_schema(
+        summary="List my watchlist",
+        description="Returns all movies from the current user's watchlist "
+        "as a plain array (no pagination), the most recently added first. "
+        "Each item has the same short set of fields as in "
+        "GET /api/movies/. The list is private: a user sees only their "
+        "own movies. To check or change one movie, use "
+        "/api/movies/{id}/watchlist/.",
+        responses={200: MovieListSerializer(many=True), **UNAUTHORIZED},
+    )
+)
+class WatchlistListView(generics.ListAPIView):
+    serializer_class = MovieListSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = None
+
+    def get_queryset(self):
+        return (
+            Movie.objects.filter(in_watchlist__user=self.request.user)
+            .prefetch_related("genres")
+            .order_by("-in_watchlist__added_at", "-id")
+        )

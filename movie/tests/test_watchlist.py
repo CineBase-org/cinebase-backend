@@ -1,7 +1,7 @@
 from rest_framework import status
 
-from movie.models import Watchlist
-from movie.tests.helpers import BaseApiTestCase, create_user
+from movie.models import Genre, Watchlist
+from movie.tests.helpers import BaseApiTestCase, create_movie, create_user
 
 
 class WatchlistBaseTestCase(BaseApiTestCase):
@@ -93,3 +93,92 @@ class WatchlistDeleteTests(WatchlistBaseTestCase):
         self.assertEqual(
             Watchlist.objects.filter(user=self.other_user).count(), 1
         )
+
+
+class WatchlistListTests(BaseApiTestCase):
+    def setUp(self):
+        super().setUp()
+        self.url = "/api/watchlist/"
+        self.client.force_authenticate(user=self.user)
+
+    def test_requires_authentication(self):
+        self.client.force_authenticate(user=None)
+
+        res = self.client.get(self.url)
+
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_empty_watchlist_returns_empty_array(self):
+        res = self.client.get(self.url)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data, [])
+
+    def test_returns_movies_with_list_fields(self):
+        Watchlist.objects.create(user=self.user, movie=self.movie)
+
+        res = self.client.get(self.url)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data), 1)
+        self.assertEqual(res.data[0]["id"], self.movie.id)
+        for key in ("title", "genres", "poster_path", "trailer_url"):
+            self.assertIn(key, res.data[0])
+
+    def test_returns_only_own_movies(self):
+        stranger = create_user(email="stranger@example.com")
+        other_movie = create_movie(tmdb_id=2, title="Not mine")
+        Watchlist.objects.create(user=self.user, movie=self.movie)
+        Watchlist.objects.create(user=stranger, movie=other_movie)
+        Watchlist.objects.create(user=stranger, movie=self.movie)
+
+        res = self.client.get(self.url)
+
+        self.assertEqual([m["id"] for m in res.data], [self.movie.id])
+
+    def test_most_recently_added_first(self):
+        second = create_movie(tmdb_id=2, title="Second")
+        third = create_movie(tmdb_id=3, title="Third")
+        stranger = create_user(email="stranger@example.com")
+        # Entries of another user must not break the order
+        Watchlist.objects.create(user=stranger, movie=third)
+        Watchlist.objects.create(user=self.user, movie=self.movie)
+        Watchlist.objects.create(user=self.user, movie=third)
+        Watchlist.objects.create(user=self.user, movie=second)
+
+        res = self.client.get(self.url)
+
+        self.assertEqual(
+            [m["id"] for m in res.data], [second.id, third.id, self.movie.id]
+        )
+
+    def test_returns_all_movies_without_pagination(self):
+        for number in range(2, 22):
+            movie = create_movie(tmdb_id=number, title=f"Movie {number}")
+            Watchlist.objects.create(user=self.user, movie=movie)
+
+        res = self.client.get(self.url)
+
+        self.assertIsInstance(res.data, list)
+        self.assertEqual(len(res.data), 20)
+
+    def test_removed_movie_disappears(self):
+        Watchlist.objects.create(user=self.user, movie=self.movie)
+        self.client.delete(f"/api/movies/{self.movie.id}/watchlist/")
+
+        res = self.client.get(self.url)
+
+        self.assertEqual(res.data, [])
+
+    def test_genres_do_not_cause_extra_queries(self):
+        genre_a = Genre.objects.create(tmdb_id=1, name="A")
+        genre_b = Genre.objects.create(tmdb_id=2, name="B")
+        for number in range(2, 8):
+            movie = create_movie(tmdb_id=number, title=f"Movie {number}")
+            movie.genres.add(genre_a, genre_b)
+            Watchlist.objects.create(user=self.user, movie=movie)
+
+        with self.assertNumQueries(2):
+            res = self.client.get(self.url)
+
+        self.assertEqual(len(res.data), 6)
