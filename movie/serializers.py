@@ -110,11 +110,6 @@ class RatingSerializer(serializers.ModelSerializer):
         fields = ("score",)
         extra_kwargs = {"score": {"min_value": 1, "max_value": 5}}
 
-    def validate_score(self, value):
-        if value < 1 or value > 5:
-            raise serializers.ValidationError("Score must be between 1 and 5")
-        return value
-
 
 class InWatchlistSerializer(serializers.Serializer):
     in_watchlist = serializers.BooleanField(read_only=True)
