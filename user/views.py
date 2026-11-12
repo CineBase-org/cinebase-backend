@@ -46,7 +46,8 @@ class CreateUserView(generics.CreateAPIView):
         "**Avatar.** To upload an avatar, send the request as "
         "`multipart/form-data` with the image in the `avatar` field "
         "(a JSON body cannot carry a file). Allowed formats: JPEG, PNG, WEBP. "
-        "Maximum size: 5 MB. Send `avatar: null` to remove the avatar.",
+        "Maximum size: 5 MB. The image is converted to WEBP and replaces "
+        "the previous avatar. Send `avatar: null` to remove the avatar.",
         responses={200: UserProfileSerializer, **UNAUTHORIZED, **BAD_REQUEST},
     ),
     patch=extend_schema(
@@ -55,7 +56,8 @@ class CreateUserView(generics.CreateAPIView):
         "**Avatar.** To upload an avatar, send the request as "
         "`multipart/form-data` with the image in the `avatar` field "
         "(a JSON body cannot carry a file). Allowed formats: JPEG, PNG, WEBP. "
-        "Maximum size: 5 MB. Send `avatar: null` to remove the avatar. "
+        "Maximum size: 5 MB. The image is converted to WEBP and replaces "
+        "the previous avatar. Send `avatar: null` to remove the avatar. "
         "Other fields can still be sent as plain JSON.",
         responses={200: UserProfileSerializer, **UNAUTHORIZED, **BAD_REQUEST},
     ),
