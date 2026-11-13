@@ -59,6 +59,11 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+# Let the browser send requests with credentials (fetch with
+# credentials: "include"). The allowed origins stay an explicit list in prod,
+# and the API does not use cookies: it is authenticated by JWT only.
+CORS_ALLOW_CREDENTIALS = True
+
 ROOT_URLCONF = "cinema_base.urls"
 
 TEMPLATES = [
