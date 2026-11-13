@@ -1,7 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from rest_framework import serializers
 
-from movie.models import Movie, Genre, MovieCast, Rating, Comment
+from movie.models import Movie, Genre, MovieCast, Person, Rating, Comment
 
 
 class ImageConfigSerializer(serializers.Serializer):
@@ -18,12 +18,36 @@ class GenreSerializer(serializers.ModelSerializer):
 
 
 class MovieCastSerializer(serializers.ModelSerializer):
+    person_id = serializers.IntegerField(
+        read_only=True,
+        help_text="Id of the actor (the same in every movie). Use it in "
+        "GET /api/movies/?actor=<person_id> and GET /api/people/<id>/. "
+        "The field id is only the id of this cast entry.",
+    )
     name = serializers.CharField(source="person.name")
     profile_path = serializers.CharField(source="person.profile_path")
 
     class Meta:
         model = MovieCast
-        fields = ("id", "name", "profile_path", "character", "order")
+        fields = (
+            "id",
+            "person_id",
+            "name",
+            "profile_path",
+            "character",
+            "order",
+        )
+
+
+class PersonSerializer(serializers.ModelSerializer):
+    movies_count = serializers.IntegerField(
+        read_only=True,
+        help_text="How many movies of the catalog have this actor in the cast",
+    )
+
+    class Meta:
+        model = Person
+        fields = ("id", "name", "profile_path", "movies_count")
 
 
 class StreamingPlatformSerializer(serializers.Serializer):

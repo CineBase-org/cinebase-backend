@@ -30,7 +30,15 @@ from movie.constants import (
     BACKDROP_SIZES,
     PROFILE_SIZES,
 )
-from movie.models import Movie, Rating, Watchlist, Comment, CommentLike, Genre
+from movie.models import (
+    Movie,
+    Rating,
+    Watchlist,
+    Comment,
+    CommentLike,
+    Genre,
+    Person,
+)
 from movie.permissions import IsAdminOrReadOnly, IsAuthorOrAdminOrReadOnly
 from movie.serializers import (
     MovieListSerializer,
@@ -41,7 +49,12 @@ from movie.serializers import (
     CommentSerializer,
     CommentLikeStatusSerializer,
     GenreSerializer,
+    PersonSerializer,
 )
+
+
+# The largest value of an integer id in the database
+MAX_DB_ID = 2147483647
 
 
 @extend_schema_view(
@@ -52,6 +65,8 @@ from movie.serializers import (
         "Use ?genres=1,5 to get only movies that have all of these genres "
         "and ?page=N to change the page. "
         "Use ?search=du to find movies whose title starts with 'du'. "
+        "Use ?actor=<person_id> to get the movies of one actor "
+        "(person_id comes from the cast of a movie). "
         "Each page has 14 movies.",
         parameters=[
             OpenApiParameter(
@@ -66,6 +81,15 @@ from movie.serializers import (
                 description="Case-insensitive start of the movie title, e.g. 'du' finds 'Dune'",
                 required=False,
                 type=str,
+            ),
+            OpenApiParameter(
+                name="actor",
+                description="Id of an actor (person_id from the cast of a "
+                "movie). Only movies with this actor in the cast are "
+                "returned. Can be combined with the other filters. "
+                "Only the first 5 actors of each movie are stored.",
+                required=False,
+                type=int,
             ),
         ],
         responses={
@@ -187,6 +211,12 @@ class MovieViewSet(viewsets.ModelViewSet):
             genres_ids = self._params_to_ints(genres)
             for genre_id in set(genres_ids):
                 queryset = queryset.filter(genres__id=genre_id)
+
+        actor = self._parse_param(
+            self.request, "actor", int, min_value=1, max_value=MAX_DB_ID
+        )
+        if actor is not None:
+            queryset = queryset.filter(cast__person_id=actor)
 
         if self.action == "retrieve":
             queryset = self._with_detail(queryset)
@@ -645,3 +675,21 @@ class WatchlistListView(generics.ListAPIView):
             .prefetch_related("genres")
             .order_by("-in_watchlist__added_at", "-id")
         )
+
+
+@extend_schema_view(
+    get=extend_schema(
+        summary="Get an actor",
+        description="Name, photo and the number of catalog movies of one "
+        "actor, for the actor page. The id is person_id from the cast of "
+        "a movie. To get the movies of the actor, use "
+        "GET /api/movies/?actor=<id>.",
+        responses={200: PersonSerializer, **NOT_FOUND},
+    )
+)
+class PersonDetailView(generics.RetrieveAPIView):
+    serializer_class = PersonSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        return Person.objects.annotate(movies_count=Count("filmography"))
