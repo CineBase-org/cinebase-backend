@@ -1,10 +1,33 @@
+import io
+
 from django.contrib.auth import get_user_model
+from django.core.files.base import ContentFile
+from PIL import Image, ImageOps
 from rest_framework import serializers
 
 from user.models import UserProfile
 
 MAX_AVATAR_SIZE = 5 * 1024 * 1024
 ALLOWED_AVATAR_FORMATS = ["JPEG", "PNG", "WEBP"]
+AVATAR_WEBP_QUALITY = 85
+
+
+def convert_to_webp(uploaded_file):
+    """Return the image as a WEBP file, so every avatar has the same format.
+
+    Pillow does not copy EXIF data (for example GPS) to the new file.
+    """
+    image = Image.open(uploaded_file)
+    image = ImageOps.exif_transpose(image)  # apply the camera rotation
+
+    has_alpha = "A" in image.getbands() or "transparency" in image.info
+    mode = "RGBA" if has_alpha else "RGB"
+    if image.mode != mode:
+        image = image.convert(mode)
+
+    buffer = io.BytesIO()
+    image.save(buffer, format="WEBP", quality=AVATAR_WEBP_QUALITY)
+    return ContentFile(buffer.getvalue(), name="avatar.webp")
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -17,16 +40,6 @@ class UserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         """Create a new user with encrypted password and return it"""
         return get_user_model().objects.create_user(**validated_data)
-
-    def update(self, instance, validated_data):
-        """Update a user, set the password correctly and return it"""
-        password = validated_data.pop("password", None)
-        user = super().update(instance, validated_data)
-        if password:
-            user.set_password(password)
-            user.save()
-
-        return user
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -59,7 +72,16 @@ class UserProfileSerializer(serializers.ModelSerializer):
             )
             instance.user.save()
 
+        avatar_changed = "avatar" in validated_data
+        old_avatar_name = instance.avatar.name if avatar_changed else None
+
         user_profile = super().update(instance, validated_data)
+
+        # Same name (S3 overwrites the object): nothing to delete. A different
+        # name means a leftover: an old avatar with a random name or a file
+        # in local storage, which never overwrites. A removed avatar too.
+        if old_avatar_name and old_avatar_name != user_profile.avatar.name:
+            user_profile.avatar.storage.delete(old_avatar_name)
         return user_profile
 
     def validate_avatar(self, value):
@@ -73,4 +95,4 @@ class UserProfileSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 "Allowed formats: JPEG, PNG, WEBP"
             )
-        return value
+        return convert_to_webp(value)

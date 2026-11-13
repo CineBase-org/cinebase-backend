@@ -51,13 +51,20 @@ class User(AbstractUser):
     objects = UserManager()
 
 
+def avatar_upload_path(instance, filename):
+    """One stable key per user: a new avatar replaces the old object"""
+    return f"avatars/{instance.user_id}.webp"
+
+
 class UserProfile(models.Model):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="profile",
     )
-    avatar = models.ImageField(upload_to="avatars/", blank=True, null=True)
+    avatar = models.ImageField(
+        upload_to=avatar_upload_path, blank=True, null=True
+    )
     bio = models.TextField(blank=True)
     location = models.CharField(max_length=255, blank=True)
     birth_date = models.DateField(blank=True, null=True)
