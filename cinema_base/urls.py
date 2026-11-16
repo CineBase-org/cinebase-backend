@@ -44,6 +44,7 @@ urlpatterns = [
     ),
     path("health/", Healthy.as_view(), name="health"),
     path("api/analytics/", include("analytics.urls", namespace="analytics")),
+    path("api/payments/", include("payments.urls", namespace="payments")),
 ]
 
 if settings.DEBUG:

@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "movie",
     "user",
     "analytics",
+    "payments",
     "rest_framework",
     "drf_spectacular",
     "rest_framework_simplejwt",
@@ -192,6 +193,14 @@ SPECTACULAR_SETTINGS = {
             "visitor to the user",
         },
         {
+            "name": "payments",
+            "description": "Paid subscription (Stripe) that gives access to "
+            "the MoviePicker (`GET /api/movies/random/`).\n\n"
+            "- **Needs a token:** start a subscription, manage it, get its "
+            "status\n"
+            "- **Not for the frontend:** `webhook` (called by Stripe)",
+        },
+        {
             "name": "user",
             "description": "Registration, login and profile.\n\n"
             "- **No token needed:** `register`, `token`, `token/refresh`, "
@@ -232,3 +241,22 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
 }
+
+# Stripe. Keys come only from the environment. Without them the payment
+# endpoints answer 503 and the rest of the API works as usual.
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+# Id of the monthly price created in the Stripe dashboard (price_...)
+STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID", "")
+# Pages of the frontend where Stripe sends the user back
+STRIPE_SUCCESS_URL = (
+    os.getenv("STRIPE_SUCCESS_URL")
+    or "http://localhost:3000/subscription/success"
+)
+STRIPE_CANCEL_URL = (
+    os.getenv("STRIPE_CANCEL_URL")
+    or "http://localhost:3000/subscription/cancel"
+)
+STRIPE_PORTAL_RETURN_URL = (
+    os.getenv("STRIPE_PORTAL_RETURN_URL") or "http://localhost:3000/profile"
+)
