@@ -26,6 +26,7 @@ rpds-py==2026.6.3
 s3transfer==0.19.3
 six==1.17.0
 sqlparse==0.6.0
+stripe==16.1.0
 uritemplate==4.2.0
 urllib3==2.8.0
 whitenoise==6.12.0
