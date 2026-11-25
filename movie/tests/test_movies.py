@@ -43,6 +43,21 @@ class MovieListTests(BaseApiTestCase):
         self.assertEqual(len(res.data["results"]), 1)
         self.assertEqual(res.data["results"][0]["id"], movie_both.id)
 
+    def test_list_ignores_genre_match(self):
+        """The catalog always needs all genres: genre_match is random only"""
+        self.movie.genres.add(self.genre)
+        movie_other = Movie.objects.create(tmdb_id=2, title="Other only")
+        movie_other.genres.add(self.other_genre)
+
+        res = self.client.get(
+            self.url
+            + f"?genres={self.genre.id},{self.other_genre.id}"
+            + "&genre_match=any"
+        )
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data["count"], 0)
+
     def test_list_filter_by_one_genre_includes_movies_with_more(self):
         self.movie.genres.add(self.genre)
         movie_both = Movie.objects.create(tmdb_id=2, title="Both genres")

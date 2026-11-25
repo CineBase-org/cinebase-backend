@@ -140,6 +140,73 @@ class MovieRandomTests(BaseApiTestCase):
             self.assertEqual(res.status_code, status.HTTP_200_OK)
             self.assertEqual(res.data["id"], both.id)
 
+    def test_genre_match_any_returns_movie_with_any_of_the_genres(self):
+        comedy = Genre.objects.create(tmdb_id=2, name="Comedy")
+        self.movie.genres.add(self.genre)
+        second = create_movie(tmdb_id=2, title="Second")
+        second.genres.add(comedy)
+
+        seen = set()
+        for _ in range(30):
+            res = self.client.get(
+                self.url
+                + f"?genres={self.genre.id},{comedy.id}&genre_match=any"
+            )
+            self.assertEqual(res.status_code, status.HTTP_200_OK)
+            seen.add(res.data["id"])
+
+        self.assertEqual(seen, {self.movie.id, second.id})
+
+    def test_genre_match_all_stays_the_default(self):
+        comedy = Genre.objects.create(tmdb_id=2, name="Comedy")
+        self.movie.genres.add(self.genre)
+        second = create_movie(tmdb_id=2, title="Second")
+        second.genres.add(comedy)
+
+        for suffix in ("", "&genre_match=all"):
+            with self.subTest(suffix=suffix):
+                res = self.client.get(
+                    self.url
+                    + f"?genres={self.genre.id},{comedy.id}{suffix}"
+                )
+
+                self.assertEqual(
+                    res.status_code, status.HTTP_404_NOT_FOUND
+                )
+
+    def test_genre_match_any_with_year_filter(self):
+        comedy = Genre.objects.create(tmdb_id=2, name="Comedy")
+        old = create_movie(
+            tmdb_id=2, title="Old", release_date=date(2000, 1, 1)
+        )
+        old.genres.add(self.genre)
+        fresh = create_movie(
+            tmdb_id=3, title="Fresh", release_date=date(2015, 1, 1)
+        )
+        fresh.genres.add(comedy)
+        self.movie.genres.add(self.genre)
+
+        for _ in range(10):
+            res = self.client.get(
+                self.url
+                + f"?genres={self.genre.id},{comedy.id}"
+                + "&year_from=2010&genre_match=any"
+            )
+            self.assertEqual(res.status_code, status.HTTP_200_OK)
+            self.assertEqual(res.data["id"], fresh.id)
+
+    def test_genre_match_any_without_genres_is_ignored(self):
+        res = self.client.get(self.url + "?genre_match=any")
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data["id"], self.movie.id)
+
+    def test_genre_match_invalid_value_gets_400(self):
+        res = self.client.get(self.url + "?genre_match=some")
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("genre_match", res.data)
+
     def test_random_filter_by_min_rating(self):
         good = create_movie(tmdb_id=2, title="Good", vote_average=8.5)
 

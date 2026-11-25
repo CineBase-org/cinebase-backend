@@ -199,19 +199,41 @@ class MovieViewSet(viewsets.ModelViewSet):
             )
         return number
 
+    def _genre_match(self):
+        """How to match several genres in the random endpoint.
+
+        "all" (the default) keeps the strict behaviour: a movie must have
+        every genre from ?genres=. "any" is for the mood presets of the
+        MoviePicker: a movie must have at least one of them. Only the
+        random endpoint accepts the parameter, the catalog always needs
+        all selected genres.
+        """
+        if getattr(self, "action", None) != "random":
+            return "all"
+        value = self.request.query_params.get("genre_match", "all")
+        if value not in ("all", "any"):
+            raise ValidationError(
+                {"genre_match": ['Must be "all" or "any".']}
+            )
+        return value
+
     def get_queryset(self):
         queryset = self.queryset
 
         genres = self.request.query_params.get("genres")
         search = self.request.query_params.get("search", "").strip()
+        genre_match = self._genre_match()
 
         if search:
             queryset = queryset.filter(title__istartswith=search)
 
         if genres:
-            genres_ids = self._params_to_ints(genres)
-            for genre_id in set(genres_ids):
-                queryset = queryset.filter(genres__id=genre_id)
+            genres_ids = set(self._params_to_ints(genres))
+            if genre_match == "any":
+                queryset = queryset.filter(genres__id__in=genres_ids)
+            else:
+                for genre_id in genres_ids:
+                    queryset = queryset.filter(genres__id=genre_id)
 
         actor = self._parse_param(
             self.request, "actor", int, min_value=1, max_value=MAX_DB_ID
@@ -392,6 +414,10 @@ class MovieViewSet(viewsets.ModelViewSet):
         "filters. The response has the same format as "
         "GET /api/movies/{id}/. Returns 404 if no movie matches. "
         "All parameters are optional.\n\n"
+        "`?genres=` needs a movie to have **all** the genres by default. "
+        'Pass `genre_match=any` to accept a movie with **at least one** of '
+        "them: this is what the mood presets use, e.g. "
+        "`?genres=8,5,11,10&genre_match=any`.\n\n"
         "**Paid feature (MoviePicker).** Needs a token and an active "
         "subscription (see `GET /api/payments/subscription/`). "
         "Without a token the answer is `401`. With a token but without an "
@@ -404,6 +430,16 @@ class MovieViewSet(viewsets.ModelViewSet):
                 "A movie matches only if it has all of them.",
                 required=False,
                 type=str,
+            ),
+            OpenApiParameter(
+                name="genre_match",
+                description='"all" (default) returns only movies that have '
+                "every genre from `genres`. \"any\" returns a movie with at "
+                "least one of them, for the mood presets.",
+                required=False,
+                type=str,
+                default="all",
+                enum=["all", "any"],
             ),
             OpenApiParameter(
                 name="min_rating",
