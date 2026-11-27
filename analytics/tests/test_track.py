@@ -40,6 +40,16 @@ class TrackEventsTests(BaseApiTestCase):
         self.assertEqual(event.properties, {"genres": [1, 2]})
         self.assertEqual(event.session.device_type, "tablet")
 
+    def test_track_surprise_me_click(self):
+        body = make_body([make_event(event_name="surprise_me_click")])
+
+        res = self.track(body)
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(
+            Event.objects.get().event_name, "surprise_me_click"
+        )
+
     def test_track_same_event_twice_is_not_duplicated(self):
         body = make_body()
 

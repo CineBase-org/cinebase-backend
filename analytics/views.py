@@ -59,7 +59,9 @@ TRACK_EVENTS_DESCRIPTION = (
     "succeeded.\n"
     "- `movie_rate`: a movie rated. Send `movie_id` and `score`.\n"
     "- `comment_create`: a comment added. Send `movie_id` and "
-    "`is_reply` (true or false)."
+    "`is_reply` (true or false).\n"
+    "- `surprise_me_click`: the «Surprise me» button pressed in the "
+    "MoviePicker. Send the same filters as in GET /api/movies/random/."
 )
 
 TRACK_EVENTS_EXAMPLE = {
