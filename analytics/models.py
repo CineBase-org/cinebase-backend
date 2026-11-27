@@ -24,6 +24,7 @@ class EventName(models.TextChoices):
     MOVIE_RATE = "movie_rate"
     COMMENT_CREATE = "comment_create"
     MOVIE_PICKER_USE = "movie_picker_use"
+    SURPRISE_ME_CLICK = "surprise_me_click"
 
 
 class Visitor(models.Model):
